@@ -144,7 +144,9 @@ class _CountdownScreenState extends State<CountdownScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 8),
+                    _Glass(child: MissionBar(session: s, now: now)),
+                    const SizedBox(height: 14),
                     Text(
                       s.current.name,
                       textAlign: TextAlign.center,
@@ -159,24 +161,28 @@ class _CountdownScreenState extends State<CountdownScreen> {
                             color: over ? Palette.rose : Palette.text,
                           ).copyWith(
                             shadows: const [
-                              Shadow(color: Color(0x4DFFFFFF), blurRadius: 18),
+                              Shadow(color: Color(0xCC080D17), blurRadius: 14),
+                              Shadow(color: Color(0x99080D17), offset: Offset(0, 3)),
                             ],
                           ),
                     ),
-                    Text.rich(
-                      TextSpan(
+                    const SizedBox(height: 6),
+                    _Glass(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          const TextSpan(text: 'kończysz o '),
-                          TextSpan(
-                            text: hhmm(s.stepEndsAt),
-                            style: ts(size: 14, weight: 600),
-                          ),
+                          BlockBar(session: s, now: now),
                           if (leave != null && leave.isAfter(now))
-                            TextSpan(text: ' · wyjście ${hhmm(leave)}'),
+                            Padding(
+                              padding: const EdgeInsets.only(top: 6),
+                              child: Text(
+                                'wyjście z domu o ${hhmm(leave)}',
+                                textAlign: TextAlign.center,
+                                style: ts(size: 13, color: Palette.gold),
+                              ),
+                            ),
                         ],
                       ),
-                      textAlign: TextAlign.center,
-                      style: ts(size: 14, color: const Color(0xE6ECF2FB)),
                     ),
                     const Spacer(),
                     _Glass(
@@ -187,8 +193,8 @@ class _CountdownScreenState extends State<CountdownScreen> {
                           Expanded(
                             child: Text(
                               over
-                                  ? 'Spokojnie. Każdy etap się liczy, a dojście na czas wciąż jest możliwe.'
-                                  : 'Skończ przed ${hhmm(s.stepEndsAt)}, a Tiko dostanie jabłko.',
+                                  ? 'Jabłka za ten etap już nie będzie, ale na miejsce wciąż możesz zdążyć.'
+                                  : 'Zmieść się w ${s.allowedMinutes} min, zanim pasek się skończy, a Tiko dostanie jabłko.',
                               style: ts(size: 13),
                             ),
                           ),
@@ -260,6 +266,109 @@ class _Glass extends StatelessWidget {
         border: Border.all(color: const Color(0x1FFFFFFF)),
       ),
       child: child,
+    );
+  }
+}
+
+/// Current block: how much of its time is used. Fills up as time passes and
+/// turns rose when the block runs over.
+class BlockBar extends StatelessWidget {
+  const BlockBar({super.key, required this.session, required this.now});
+
+  final RunSession session;
+  final DateTime now;
+
+  @override
+  Widget build(BuildContext context) {
+    final total = session.allowedMinutes * 60;
+    final elapsed = now
+        .difference(session.stepStartedAt)
+        .inSeconds
+        .clamp(0, 1 << 30);
+    final over = elapsed > total;
+    final mm = elapsed ~/ 60, ss = elapsed % 60;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(6),
+          child: LinearProgressIndicator(
+            value: total == 0 ? 1 : (elapsed / total).clamp(0.0, 1.0),
+            minHeight: 12,
+            color: over ? Palette.rose : Palette.teal,
+            backgroundColor: const Color(0x99080D17),
+          ),
+        ),
+        const SizedBox(height: 5),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'minęło $mm:${ss.toString().padLeft(2, '0')}',
+                overflow: TextOverflow.ellipsis,
+                style: ts(size: 12.5, color: const Color(0xE6ECF2FB)),
+              ),
+            ),
+            Flexible(
+              child: Text(
+                'ten etap: ${session.allowedMinutes} min${session.extraMinutes > 0 ? ' (z +${session.extraMinutes})' : ''}',
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.right,
+                style: ts(size: 12.5, color: const Color(0xE6ECF2FB)),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+/// Whole mission: one segment per block, width by planned minutes.
+/// Done blocks are full, the current one fills up, the rest are empty.
+class MissionBar extends StatelessWidget {
+  const MissionBar({super.key, required this.session, required this.now});
+
+  final RunSession session;
+  final DateTime now;
+
+  @override
+  Widget build(BuildContext context) {
+    final steps = session.steps;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            for (var i = 0; i < steps.length; i++) ...[
+              if (i > 0) const SizedBox(width: 3),
+              Expanded(
+                flex: steps[i].minutes.clamp(1, 1000),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(3),
+                  child: LinearProgressIndicator(
+                    value: i < session.index
+                        ? 1
+                        : i > session.index
+                        ? 0
+                        : (now.difference(session.stepStartedAt).inSeconds /
+                                  (session.allowedMinutes * 60))
+                              .clamp(0.0, 1.0),
+                    minHeight: 5,
+                    color: Palette.gold,
+                    backgroundColor: const Color(0x99080D17),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'cała misja · na miejscu ok. ${hhmm(session.projectedArrival(now))}, cel ${hhmm(session.arriveAt)}',
+          style: ts(size: 11.5, color: const Color(0xCCECF2FB)),
+        ),
+      ],
     );
   }
 }
