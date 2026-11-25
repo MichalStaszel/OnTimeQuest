@@ -27,6 +27,8 @@ void main() {
       clock.now = clock.now.add(const Duration(minutes: 10));
       await tapText(t, 'Gotowe');
     }
+    expect(app.sound.played.first, 'blockStart');
+    expect(app.sound.played, contains('missionDone'));
     expect(find.text('Jesteś na miejscu 10:10'), findsOneWidget);
     expect(find.text('Start przed planem'), findsOneWidget);
 

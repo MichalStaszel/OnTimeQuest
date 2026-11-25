@@ -6,11 +6,13 @@ import 'package:provider/provider.dart';
 import '../art/scene_view.dart';
 import '../art/scenes.dart';
 import '../art/sprites.dart';
+import '../audio/cues.dart';
 import '../logic/format.dart';
 import '../models/run_session.dart';
 import '../state/app_state.dart';
 import '../theme/palette.dart';
 import '../widgets/dialogs.dart';
+import '../widgets/sound_sheet.dart';
 import '../widgets/ui.dart';
 import 'reward_screen.dart';
 
@@ -30,6 +32,20 @@ class CountdownScreen extends StatefulWidget {
 class _CountdownScreenState extends State<CountdownScreen> {
   late final Timer _ticker;
   bool _leaving = false;
+  CueTracker? _cues;
+
+  /// Plays the sounds due since the last frame (each fires once).
+  void _playCues(AppState app, RunSession s, DateTime now) {
+    final cues = _cues ??= CueTracker(
+      warnFor: (i) {
+        final id = s.steps[i].blockId;
+        return id == null || (app.blockById(id)?.warnBeforeEnd ?? true);
+      },
+    );
+    for (final c in cues.update(s, now)) {
+      app.sound.play(c, app.soundSettings);
+    }
+  }
 
   @override
   void initState() {
@@ -65,10 +81,11 @@ class _CountdownScreenState extends State<CountdownScreen> {
   Widget build(BuildContext context) {
     final app = context.watch<AppState>();
     final s = app.session;
+    final now = app.now();
+    if (s != null) _playCues(app, s, now);
     _leaveWhenDone(s);
     if (s == null || s.finished) return const Scaffold();
 
-    final now = app.now();
     final remaining = s.remaining(now);
     final over = remaining.isNegative;
     final behind = s.minutesBehind(now);
@@ -129,7 +146,16 @@ class _CountdownScreenState extends State<CountdownScreen> {
                           color: Palette.text,
                           background: const Color(0x8C080D17),
                         ),
-                        const SizedBox(width: 8),
+                        IconButton(
+                          tooltip: 'Dźwięki',
+                          onPressed: () => showSoundSheet(context),
+                          icon: Icon(
+                            app.soundSettings.silent
+                                ? Icons.volume_off
+                                : Icons.volume_up,
+                            color: Palette.text,
+                          ),
+                        ),
                         Expanded(
                           child: Align(
                             alignment: Alignment.centerRight,
@@ -145,7 +171,9 @@ class _CountdownScreenState extends State<CountdownScreen> {
                       ],
                     ),
                     const SizedBox(height: 8),
-                    _Glass(child: MissionBar(session: s, now: now)),
+                    _Glass(
+                      child: MissionBar(session: s, now: now),
+                    ),
                     const SizedBox(height: 14),
                     Text(
                       s.current.name,
@@ -162,7 +190,10 @@ class _CountdownScreenState extends State<CountdownScreen> {
                           ).copyWith(
                             shadows: const [
                               Shadow(color: Color(0xCC080D17), blurRadius: 14),
-                              Shadow(color: Color(0x99080D17), offset: Offset(0, 3)),
+                              Shadow(
+                                color: Color(0x99080D17),
+                                offset: Offset(0, 3),
+                              ),
                             ],
                           ),
                     ),

@@ -2,6 +2,8 @@ import 'dart:math' as math;
 
 import 'package:material_ui/material_ui.dart';
 
+import '../audio/sound_player.dart';
+import '../audio/sound_settings.dart';
 import '../data/defaults.dart';
 import '../data/local_store.dart';
 import '../logic/planner.dart';
@@ -16,8 +18,10 @@ import '../models/run_session.dart';
 /// `context.watch<AppState>()` and call its methods to change things;
 /// every change is persisted right away.
 class AppState extends ChangeNotifier {
-  AppState(this._store, {DateTime Function()? clock})
-    : now = clock ?? DateTime.now {
+  AppState(this._store, {DateTime Function()? clock, SoundPlayer? sound})
+    : now = clock ?? DateTime.now,
+      sound = sound ?? SoundPlayer() {
+    _soundSettings = _store.loadSound();
     _blocks = _store.loadBlocks() ?? List.of(defaultBlocks);
     _sets = _store.loadSets() ?? List.of(defaultSets);
     _missions = _store.loadMissions() ?? [sampleMission(now())];
@@ -32,6 +36,17 @@ class AppState extends ChangeNotifier {
 
   /// Injectable clock, handy in tests.
   final DateTime Function() now;
+
+  /// Plays countdown cues. Silent unless the app passes a device player.
+  final SoundPlayer sound;
+  late SoundSettings _soundSettings;
+  SoundSettings get soundSettings => _soundSettings;
+
+  void setSoundSettings(SoundSettings v) {
+    _soundSettings = v;
+    _store.saveSound(v);
+    notifyListeners();
+  }
 
   late List<Block> _blocks;
   late List<BlockSet> _sets;

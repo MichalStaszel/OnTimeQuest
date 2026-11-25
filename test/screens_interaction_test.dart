@@ -3,6 +3,9 @@ import 'package:material_ui/material_ui.dart';
 
 import 'helpers.dart';
 
+import 'package:ontime_quest/audio/sound_settings.dart';
+import 'package:ontime_quest/widgets/sound_sheet.dart';
+
 /// Clicks through every screen to catch framework assertions (like the
 /// disposed-controller crash Michał hit) before they reach a phone.
 void main() {
@@ -91,6 +94,17 @@ void main() {
     await tapText(t, 'Zacznij teraz · +20 za wcześniejszy start');
     await tapText(t, '+5 min');
     expect(app.session!.extraMinutes, 5);
+    await t.tap(find.byIcon(Icons.volume_up));
+    await t.pumpAndSettle();
+    await tapText(t, 'Pan Zegarek');
+    await t.tap(find.byType(Switch));
+    await t.pumpAndSettle();
+    expect(app.soundSettings.narrator, Narrator.male);
+    expect(app.soundSettings.beeps, isFalse);
+    await tapText(t, 'Posłuchaj');
+    expect(app.sound.played.last, 'twoMinutesLeft');
+    Navigator.of(t.element(find.byType(SoundSheet))).pop();
+    await t.pumpAndSettle();
     await t.tap(find.byIcon(Icons.close));
     await t.pumpAndSettle();
     await tapText(t, 'Przerwij');

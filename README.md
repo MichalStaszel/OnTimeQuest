@@ -41,6 +41,10 @@ flutter build apk      # debug-signed APK in build/app/outputs/flutter-apk/
 - **Countdown:** a full-screen pixel street for the time of day
   (dawn/day/dusk/night), a big clock, end time and when to leave, and a
   small reward per stage (an apple). Gotowe / +5 min. Survives app restarts.
+- **Sound:** chiptune jingles (block start, 2 min left, 3-2-1, time up,
+  Gotowe, finish) synthesised in code, plus a Polish narrator: "Pan Zegarek"
+  (male) or "Pani Minutka" (female), or none. Speaker icon on Dziś and on the
+  countdown. See "Voice" below.
 - **Reward:** on time is decided by the clock (the last block is the trip).
   Points are itemised: +100 on time, +2/min per block finished early (max 10),
   +20 early start, +20 without +5, +5/day streak (max 50). An honest
@@ -56,11 +60,28 @@ flutter build apk      # debug-signed APK in build/app/outputs/flutter-apk/
 
 ## Not done yet
 
-- Android notification with Gotowe / +5 actions, the real alarm, and sounds.
+- Android notification with Gotowe / +5 actions and the real alarm. Sounds
+  only play while the countdown screen is open.
 - Location-based arrival (it is a button for now).
 - Real art: everything is placeholder pixel art drawn in code (`lib/art/`).
   This will be swapped for an AI-generated set later.
 - Rudi and Garaż companions, more scenes and items, recurring missions.
+
+## Voice
+
+The lines live in `lib/audio/voice_lines.dart`, each with an id such as
+`m_warn_1`. For now they are read by the phone's own Polish text-to-speech
+(`flutter_tts`), with pitch and speed tuned per narrator; if Google's male
+or female Polish voice is installed it is picked automatically.
+
+To use recorded voices instead, drop files at
+`assets/voice/male/<id>.mp3` or `assets/voice/female/<id>.mp3` and list
+`assets/voice/male/` and `assets/voice/female/` under `assets:` in
+`pubspec.yaml`. A clip is used when it exists; otherwise TTS reads the line.
+Lines with `{name}` or `{min}` stay on TTS.
+
+Tone rules for new lines: funny and warm, never shaming. Late means
+"we can still make it".
 
 ## Code map
 
@@ -72,6 +93,7 @@ lib/
   models/                 Block/BlockSet, Mission/PlanStep, RunSession,
                           CompanionState + stages + shop, history
   logic/                  planner (backwards, learning, streak), rewards, format
+  audio/                  cue tracker, jingles, voice lines, sound player
   data/                   LocalStore (shared_preferences JSON) + starter data
   state/app_state.dart    the one ChangeNotifier screens talk to
   screens/                onboarding, today, missions, mission editor, blocks,

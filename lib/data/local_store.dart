@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../audio/sound_settings.dart';
 import '../models/block.dart';
 import '../models/history.dart';
 import '../models/companion.dart';
@@ -26,6 +27,7 @@ class LocalStore {
   static const _kSession = 'session.v1';
   static const _kSteps = 'history.steps.v1';
   static const _kArrivals = 'history.arrivals.v1';
+  static const _kSound = 'settings.sound.v1';
 
   List<T>? _readList<T>(String key, T Function(Map<String, dynamic>) f) {
     final raw = _prefs.getString(key);
@@ -85,4 +87,14 @@ class LocalStore {
   Future<void> saveSession(RunSession? s) => s == null
       ? _prefs.remove(_kSession)
       : _prefs.setString(_kSession, jsonEncode(s.toJson()));
+
+  SoundSettings loadSound() {
+    final raw = _prefs.getString(_kSound);
+    return raw == null
+        ? const SoundSettings()
+        : SoundSettings.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+  }
+
+  Future<void> saveSound(SoundSettings s) =>
+      _prefs.setString(_kSound, jsonEncode(s.toJson()));
 }

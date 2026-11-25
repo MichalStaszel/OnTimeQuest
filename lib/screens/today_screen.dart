@@ -8,6 +8,7 @@ import '../logic/format.dart';
 import '../models/mission.dart';
 import '../state/app_state.dart';
 import '../theme/palette.dart';
+import '../widgets/sound_sheet.dart';
 import '../widgets/ui.dart';
 import 'countdown_screen.dart';
 import 'home_shell.dart';
@@ -49,6 +50,16 @@ class _TodayScreenState extends State<TodayScreen> {
               ),
               const SizedBox(width: 6),
               Pill(text: '${app.streak}', sprite: Sprites.flame),
+              IconButton(
+                tooltip: 'Dźwięki',
+                visualDensity: VisualDensity.compact,
+                onPressed: () => showSoundSheet(context),
+                icon: Icon(
+                  app.soundSettings.silent ? Icons.volume_off : Icons.volume_up,
+                  color: Palette.muted,
+                  size: 22,
+                ),
+              ),
             ],
           ),
         ),
