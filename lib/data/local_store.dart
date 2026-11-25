@@ -1,0 +1,76 @@
+import 'dart:convert';
+
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../models/block.dart';
+import '../models/history.dart';
+import '../models/plan.dart';
+import '../models/run_session.dart';
+
+/// Everything is stored on the device as JSON in shared_preferences.
+/// Small data, no backend. Swap for sqflite/drift if history grows large.
+class LocalStore {
+  LocalStore(this._prefs);
+
+  final SharedPreferences _prefs;
+
+  static Future<LocalStore> open() async =>
+      LocalStore(await SharedPreferences.getInstance());
+
+  static const _kBlocks = 'blocks.v1';
+  static const _kSets = 'sets.v1';
+  static const _kPlan = 'plan.v1';
+  static const _kSession = 'session.v1';
+  static const _kSteps = 'history.steps.v1';
+  static const _kArrivals = 'history.arrivals.v1';
+
+  List<T>? _readList<T>(String key, T Function(Map<String, dynamic>) f) {
+    final raw = _prefs.getString(key);
+    if (raw == null) return null;
+    return (jsonDecode(raw) as List)
+        .map((e) => f(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<void> _writeList(String key, List<Map<String, dynamic>> items) =>
+      _prefs.setString(key, jsonEncode(items));
+
+  List<Block>? loadBlocks() => _readList(_kBlocks, Block.fromJson);
+  Future<void> saveBlocks(List<Block> v) =>
+      _writeList(_kBlocks, v.map((e) => e.toJson()).toList());
+
+  List<BlockSet>? loadSets() => _readList(_kSets, BlockSet.fromJson);
+  Future<void> saveSets(List<BlockSet> v) =>
+      _writeList(_kSets, v.map((e) => e.toJson()).toList());
+
+  List<StepRecord> loadStepHistory() =>
+      _readList(_kSteps, StepRecord.fromJson) ?? [];
+  Future<void> saveStepHistory(List<StepRecord> v) =>
+      _writeList(_kSteps, v.map((e) => e.toJson()).toList());
+
+  List<ArrivalRecord> loadArrivals() =>
+      _readList(_kArrivals, ArrivalRecord.fromJson) ?? [];
+  Future<void> saveArrivals(List<ArrivalRecord> v) =>
+      _writeList(_kArrivals, v.map((e) => e.toJson()).toList());
+
+  Plan? loadPlan() {
+    final raw = _prefs.getString(_kPlan);
+    return raw == null
+        ? null
+        : Plan.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+  }
+
+  Future<void> savePlan(Plan p) =>
+      _prefs.setString(_kPlan, jsonEncode(p.toJson()));
+
+  RunSession? loadSession() {
+    final raw = _prefs.getString(_kSession);
+    return raw == null
+        ? null
+        : RunSession.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+  }
+
+  Future<void> saveSession(RunSession? s) => s == null
+      ? _prefs.remove(_kSession)
+      : _prefs.setString(_kSession, jsonEncode(s.toJson()));
+}
