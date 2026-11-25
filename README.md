@@ -73,7 +73,7 @@ lib/
   widgets/              pixel sprites, pixel buttons/panels, dialogs
   screens/              plan, blocks, set editor, countdown, arrival, progress
 test/                   planner, app state, and a full-flow widget test
-assets/fonts/           Press Start 2P, Pixelify Sans, VT323 (SIL OFL)
+assets/fonts/           Press Start 2P, Space Grotesk, VT323 (SIL OFL)
 ```
 
 Pixel sprites (Tiko, block icons) are drawn from character grids in

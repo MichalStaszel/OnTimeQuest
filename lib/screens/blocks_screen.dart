@@ -98,9 +98,8 @@ class BlocksScreen extends StatelessWidget {
                           .map((b) => '${b.name} ${b.minutes}')
                           .join(' · '),
                       style: const TextStyle(
-                        fontFamily: Fonts.numbers,
                         color: Palette.lavender,
-                        fontSize: 19,
+                        fontSize: 13,
                       ),
                     ),
                   ],

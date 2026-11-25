@@ -18,15 +18,11 @@ abstract final class Palette {
   static const black = Color(0xFF000000);
 }
 
-/// Pixelify Sans draws 5 like S and Z like 2, so any line of UI text
-/// that carries numbers uses VT323 at a slightly larger size.
-abstract final class NumText {
-  static const size = 21.0;
-}
-
 /// Font families bundled in assets/fonts (all OFL, all with Polish glyphs).
+/// Pixel fonts only for the logo, short headings and clock digits; all
+/// running text uses a readable sans so longer copy stays easy to read.
 abstract final class Fonts {
-  static const logo = 'PressStart2P'; // logo, big headings
-  static const ui = 'PixelifySans'; // interface
+  static const logo = 'PressStart2P'; // logo, short headings, buttons
+  static const ui = 'SpaceGrotesk'; // all body and UI text
   static const numbers = 'VT323'; // clocks and timers
 }

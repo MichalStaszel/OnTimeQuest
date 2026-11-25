@@ -126,11 +126,7 @@ class _CountdownScreenState extends State<CountdownScreen> {
                     ? 'ponad plan ${s.allowedMinutes} min'
                     : 'zostało z ${s.allowedMinutes} min',
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontFamily: Fonts.numbers,
-                  fontSize: NumText.size,
-                  color: Palette.lavender,
-                ),
+                style: const TextStyle(fontSize: 16, color: Palette.lavender),
               ),
               const SizedBox(height: 16),
               LifeBar(fraction: lifeLeft),
@@ -148,8 +144,7 @@ class _CountdownScreenState extends State<CountdownScreen> {
                     : 'Masz ${-behind} min zapasu. Na miejscu ok. ${hhmm(s.projectedArrival(now))}.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontFamily: Fonts.numbers,
-                  fontSize: NumText.size,
+                  fontSize: 16,
                   color: behind > 0 ? Palette.amber : Palette.lavender,
                 ),
               ),
@@ -183,11 +178,7 @@ class _CountdownScreenState extends State<CountdownScreen> {
                     ? 'Dalej: meta!'
                     : 'Dalej: ${next.name}, ${next.minutes} min',
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontFamily: Fonts.numbers,
-                  fontSize: NumText.size,
-                  color: Palette.lavender,
-                ),
+                style: const TextStyle(fontSize: 16, color: Palette.lavender),
               ),
             ],
           ),

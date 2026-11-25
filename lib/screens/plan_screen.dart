@@ -426,8 +426,7 @@ class _Footer extends StatelessWidget {
                     ? 'Już ${durationLabel(lateBy)} po starcie. Ruszaj teraz!'
                     : 'Całość: ${durationLabel(schedule.totalMinutes)}',
                 style: TextStyle(
-                  fontFamily: Fonts.numbers,
-                  fontSize: NumText.size,
+                  fontSize: 16,
                   color: lateBy > 0 ? Palette.tomato : Palette.lavender,
                 ),
               ),
