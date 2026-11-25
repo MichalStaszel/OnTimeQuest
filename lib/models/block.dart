@@ -4,7 +4,9 @@ class Block {
     required this.id,
     required this.name,
     required this.minutes,
-    this.icon = 'flag',
+    this.icon = 'glass',
+    this.warnBeforeEnd = true,
+    this.allowPlusFive = true,
   });
 
   final String id;
@@ -14,11 +16,25 @@ class Block {
   /// Sprite id, see `Sprites.blockIcons`.
   final String icon;
 
-  Block copyWith({String? name, int? minutes, String? icon}) => Block(
+  /// Sound 2 minutes before the end (stored; the sound itself is a follow-up).
+  final bool warnBeforeEnd;
+
+  /// Show "+5 min" for this block.
+  final bool allowPlusFive;
+
+  Block copyWith({
+    String? name,
+    int? minutes,
+    String? icon,
+    bool? warnBeforeEnd,
+    bool? allowPlusFive,
+  }) => Block(
     id: id,
     name: name ?? this.name,
     minutes: minutes ?? this.minutes,
     icon: icon ?? this.icon,
+    warnBeforeEnd: warnBeforeEnd ?? this.warnBeforeEnd,
+    allowPlusFive: allowPlusFive ?? this.allowPlusFive,
   );
 
   Map<String, dynamic> toJson() => {
@@ -26,13 +42,17 @@ class Block {
     'name': name,
     'minutes': minutes,
     'icon': icon,
+    'warnBeforeEnd': warnBeforeEnd,
+    'allowPlusFive': allowPlusFive,
   };
 
   factory Block.fromJson(Map<String, dynamic> j) => Block(
     id: j['id'] as String,
     name: j['name'] as String,
     minutes: j['minutes'] as int,
-    icon: j['icon'] as String? ?? 'flag',
+    icon: j['icon'] as String? ?? 'glass',
+    warnBeforeEnd: j['warnBeforeEnd'] as bool? ?? true,
+    allowPlusFive: j['allowPlusFive'] as bool? ?? true,
   );
 }
 

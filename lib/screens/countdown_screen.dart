@@ -3,16 +3,19 @@ import 'dart:async';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
+import '../art/scene_view.dart';
+import '../art/scenes.dart';
+import '../art/sprites.dart';
 import '../logic/format.dart';
 import '../models/run_session.dart';
 import '../state/app_state.dart';
 import '../theme/palette.dart';
 import '../widgets/dialogs.dart';
-import '../widgets/pixel_sprite.dart';
-import '../widgets/pixel_ui.dart';
-import 'arrival_screen.dart';
+import '../widgets/ui.dart';
+import 'reward_screen.dart';
 
-/// Screen 3 from the mockups: each block is a stage of the game.
+/// Screen 05: full-screen scene for the time of day, big clock, a small
+/// concrete reward per stage, Gotowe and +5 min.
 class CountdownScreen extends StatefulWidget {
   const CountdownScreen({super.key});
 
@@ -52,7 +55,7 @@ class _CountdownScreenState extends State<CountdownScreen> {
         Navigator.of(context).pop();
       } else {
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const ArrivalScreen()),
+          MaterialPageRoute(builder: (_) => const RewardScreen()),
         );
       }
     });
@@ -69,8 +72,9 @@ class _CountdownScreenState extends State<CountdownScreen> {
     final remaining = s.remaining(now);
     final over = remaining.isNegative;
     final behind = s.minutesBehind(now);
-    final lifeLeft = remaining.inSeconds / (s.allowedMinutes * 60);
+    final leave = s.leaveAt();
     final next = s.next;
+    final phase = phaseFor(now);
 
     return PopScope(
       canPop: false,
@@ -78,110 +82,153 @@ class _CountdownScreenState extends State<CountdownScreen> {
         if (!didPop) _askAbort(app);
       },
       child: Scaffold(
-        body: SafeArea(
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              Row(
-                children: [
-                  IconButton(
-                    tooltip: 'Przerwij grę',
-                    onPressed: () => _askAbort(app),
-                    icon: const Icon(Icons.close, color: Palette.lavender),
-                  ),
-                  Text(
-                    'ETAP ${s.index + 1}/${s.steps.length}',
-                    style: const TextStyle(
-                      fontFamily: Fonts.logo,
-                      fontSize: 11,
-                      color: Palette.lavender,
-                    ),
-                  ),
-                  const Spacer(),
-                  _StatusChip(behind: behind),
-                ],
-              ),
-              const SizedBox(height: 24),
-              Center(
-                child: PixelSprite(Sprites.forIcon(s.current.icon), scale: 5),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                s.current.name.toUpperCase(),
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontFamily: Fonts.logo, fontSize: 18),
-              ),
-              Text(
-                countdownLabel(remaining),
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontFamily: Fonts.numbers,
-                  fontSize: 110,
-                  height: 1.05,
-                  color: over ? Palette.tomato : Palette.paper,
+        backgroundColor: Colors.black,
+        body: Stack(
+          fit: StackFit.expand,
+          children: [
+            SceneView(
+              sceneKey: 'street-${phase.name}',
+              draw: () => drawStreet(phase),
+              sceneSize: streetSize,
+              anchor: streetAnchor,
+              stage: app.stage,
+              hat: app.showsHat,
+              fit: BoxFit.cover,
+            ),
+            // Soft darkening at the top and bottom so text stays readable.
+            const DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Color(0x99080D17),
+                    Color(0x00080D17),
+                    Color(0x00080D17),
+                    Color(0xB3080D17),
+                  ],
+                  stops: [0, 0.35, 0.6, 1],
                 ),
               ),
-              Text(
-                over
-                    ? 'ponad plan ${s.allowedMinutes} min'
-                    : 'zostało z ${s.allowedMinutes} min',
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 16, color: Palette.lavender),
-              ),
-              const SizedBox(height: 16),
-              LifeBar(fraction: lifeLeft),
-              const SizedBox(height: 20),
-              _Track(
-                planned: s.plannedProgress(now),
-                actual: s.actualProgress(now),
-                runFrame: now.second.isOdd,
-                arriveAt: s.arriveAt,
-              ),
-              const SizedBox(height: 12),
-              Text(
-                behind > 0
-                    ? 'Tiko jest $behind min za planem. Na miejscu ok. ${hhmm(s.projectedArrival(now))}.'
-                    : 'Masz ${-behind} min zapasu. Na miejscu ok. ${hhmm(s.projectedArrival(now))}.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: behind > 0 ? Palette.amber : Palette.lavender,
+            ),
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 4, 16, 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        IconButton(
+                          tooltip: 'Przerwij misję',
+                          onPressed: () => _askAbort(app),
+                          icon: const Icon(Icons.close, color: Palette.text),
+                        ),
+                        Pill(
+                          text: 'Etap ${s.index + 1} z ${s.steps.length}',
+                          color: Palette.text,
+                          background: const Color(0x8C080D17),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Align(
+                            alignment: Alignment.centerRight,
+                            child: Pill(
+                              text: behind > 0
+                                  ? '$behind min za planem'
+                                  : 'na czas',
+                              color: behind > 0 ? Palette.rose : Palette.teal,
+                              background: const Color(0x8C080D17),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      s.current.name,
+                      textAlign: TextAlign.center,
+                      style: ts(size: 22, weight: 600),
+                    ),
+                    Text(
+                      countdownLabel(remaining),
+                      textAlign: TextAlign.center,
+                      style:
+                          numStyle(
+                            110,
+                            color: over ? Palette.rose : Palette.text,
+                          ).copyWith(
+                            shadows: const [
+                              Shadow(color: Color(0x4DFFFFFF), blurRadius: 18),
+                            ],
+                          ),
+                    ),
+                    Text.rich(
+                      TextSpan(
+                        children: [
+                          const TextSpan(text: 'kończysz o '),
+                          TextSpan(
+                            text: hhmm(s.stepEndsAt),
+                            style: ts(size: 14, weight: 600),
+                          ),
+                          if (leave != null && leave.isAfter(now))
+                            TextSpan(text: ' · wyjście ${hhmm(leave)}'),
+                        ],
+                      ),
+                      textAlign: TextAlign.center,
+                      style: ts(size: 14, color: const Color(0xE6ECF2FB)),
+                    ),
+                    const Spacer(),
+                    _Glass(
+                      child: Row(
+                        children: [
+                          const SpriteBox(Sprites.apple, size: 22),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              over
+                                  ? 'Spokojnie. Każdy etap się liczy, a dojście na czas wciąż jest możliwe.'
+                                  : 'Skończ przed ${hhmm(s.stepEndsAt)}, a Tiko dostanie jabłko.',
+                              style: ts(size: 13),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: AppButton(
+                            'Gotowe',
+                            tone: ButtonTone.teal,
+                            onPressed: app.completeStep,
+                          ),
+                        ),
+                        if (s.current.allowPlusFive) ...[
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: AppButton(
+                              '+5 min',
+                              onPressed: app.addFiveMinutes,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      next == null
+                          ? 'To ostatni etap. Potem meta!'
+                          : 'Dalej: ${next.name}, ${next.minutes} min',
+                      textAlign: TextAlign.center,
+                      style: ts(size: 13, color: const Color(0xCCECF2FB)),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                    flex: 3,
-                    child: PixelButton(
-                      label: 'GOTOWE',
-                      expand: true,
-                      onPressed: app.completeStep,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    flex: 2,
-                    child: PixelButton(
-                      label: '+5 MIN',
-                      fontSize: 12,
-                      expand: true,
-                      color: Palette.amber,
-                      onPressed: app.addFiveMinutes,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Text(
-                next == null
-                    ? 'Dalej: meta!'
-                    : 'Dalej: ${next.name}, ${next.minutes} min',
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 16, color: Palette.lavender),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -190,7 +237,7 @@ class _CountdownScreenState extends State<CountdownScreen> {
   Future<void> _askAbort(AppState app) async {
     if (await confirm(
       context,
-      'Przerwać grę? Postęp tej misji przepadnie.',
+      'Przerwać misję? Odliczanie się skończy, punkty za nią nie wpadną.',
       yes: 'Przerwij',
     )) {
       app.abortSession();
@@ -198,106 +245,21 @@ class _CountdownScreenState extends State<CountdownScreen> {
   }
 }
 
-class _StatusChip extends StatelessWidget {
-  const _StatusChip({required this.behind});
+class _Glass extends StatelessWidget {
+  const _Glass({required this.child});
 
-  final int behind;
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    final late = behind > 0;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      color: late ? Palette.tomato : Palette.mint,
-      child: Text(
-        late ? 'SPÓŹNIENIE $behind MIN' : 'NA CZAS',
-        style: const TextStyle(
-          fontFamily: Fonts.logo,
-          fontSize: 9,
-          color: Palette.ink,
-        ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0x99080D17),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0x1FFFFFFF)),
       ),
-    );
-  }
-}
-
-/// Track from home to the finish flag. Solid Tiko = you, faded Tiko =
-/// where you should be according to the plan.
-class _Track extends StatelessWidget {
-  const _Track({
-    required this.planned,
-    required this.actual,
-    required this.runFrame,
-    required this.arriveAt,
-  });
-
-  final double planned;
-  final double actual;
-  final bool runFrame;
-  final DateTime arriveAt;
-
-  @override
-  Widget build(BuildContext context) {
-    const spriteW = 16 * 2.0;
-    return Column(
-      children: [
-        LayoutBuilder(
-          builder: (context, c) {
-            final usable = c.maxWidth - spriteW - 20;
-            return SizedBox(
-              height: 40,
-              child: Stack(
-                children: [
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: 2,
-                    child: Container(height: 4, color: Palette.plum),
-                  ),
-                  Positioned(
-                    right: 0,
-                    bottom: 4,
-                    child: PixelSprite(Sprites.flag, scale: 2),
-                  ),
-                  Positioned(
-                    left: usable * planned,
-                    bottom: 6,
-                    child: Opacity(
-                      opacity: 0.35,
-                      child: PixelSprite(Sprites.tiko, scale: 2),
-                    ),
-                  ),
-                  Positioned(
-                    left: usable * actual,
-                    bottom: 6,
-                    child: PixelSprite(
-                      runFrame ? Sprites.tikoRun : Sprites.tiko,
-                      scale: 2,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
-        Row(
-          children: [
-            const Text(
-              'dom',
-              style: TextStyle(color: Palette.lavender, fontSize: 12),
-            ),
-            const Spacer(),
-            Text(
-              hhmm(arriveAt),
-              style: const TextStyle(
-                fontFamily: Fonts.numbers,
-                fontSize: 20,
-                color: Palette.amber,
-              ),
-            ),
-          ],
-        ),
-      ],
+      child: child,
     );
   }
 }

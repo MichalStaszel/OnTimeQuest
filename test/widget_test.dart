@@ -1,53 +1,37 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:ontime_quest/app.dart';
-import 'package:ontime_quest/data/local_store.dart';
-import 'package:ontime_quest/state/app_state.dart';
-import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+
+import 'helpers.dart';
 
 void main() {
-  testWidgets('plan -> start game -> Done through all stages -> arrival', (
-    tester,
-  ) async {
-    tester.view.physicalSize = const Size(1080, 2400);
-    tester.view.devicePixelRatio = 2.75;
-    addTearDown(tester.view.reset);
-    SharedPreferences.setMockInitialValues({});
-    final store = await LocalStore.open();
-    final app = AppState(store, clock: () => DateTime(2026, 11, 25, 9, 50));
+  testWidgets('onboarding -> today -> countdown -> reward -> Tiko', (t) async {
+    final clock = TestClock();
+    final app = await bootApp(t, clock, onboarded: false);
 
-    await tester.pumpWidget(
-      ChangeNotifierProvider.value(value: app, child: const OnTimeQuestApp()),
+    expect(find.text('Cześć! Jak masz na imię?'), findsOneWidget);
+    await t.enterText(find.byType(TextField), 'Michał');
+    await tapText(t, 'Dalej');
+    expect(
+      find.text('Kto będzie pilnował czasu razem z tobą?'),
+      findsOneWidget,
     );
-    expect(find.text('Dentysta'), findsOneWidget);
-    expect(find.text('09:55'), findsWidgets);
+    await tapText(t, 'Wybieram Tiko');
 
-    await tester.scrollUntilVisible(
-      find.text('START GRY'),
-      300,
-      scrollable: find
-          .descendant(
-            of: find.byType(ReorderableListView),
-            matching: find.byType(Scrollable),
-          )
-          .first,
-    );
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('START GRY'));
-    await tester.pumpAndSettle();
-    expect(find.text('ETAP 1/5'), findsOneWidget);
-    expect(find.text('ŚNIADANIE'), findsOneWidget);
+    expect(find.text('Dzień dobry, Michał'), findsOneWidget);
+    expect(find.text('Dentysta · bądź o 12:00'), findsOneWidget);
+    await tapText(t, 'Zacznij teraz · +20 za wcześniejszy start');
+    expect(find.text('Etap 1 z 5'), findsOneWidget);
+    expect(find.text('Śniadanie'), findsOneWidget);
 
     for (var i = 0; i < 5; i++) {
-      await tester.ensureVisible(find.text('GOTOWE'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('GOTOWE'));
-      await tester.pumpAndSettle();
+      clock.now = clock.now.add(const Duration(minutes: 10));
+      await tapText(t, 'Gotowe');
     }
-    expect(find.text('NA CZAS?'), findsOneWidget);
-    await tester.tap(find.text('TAK'));
-    await tester.pumpAndSettle();
-    expect(find.text('+120'), findsOneWidget);
+    expect(find.text('Jesteś na miejscu 10:10'), findsOneWidget);
+    expect(find.text('Start przed planem'), findsOneWidget);
+
+    await tapText(t, 'Nakarm Tiko');
+    expect(app.companion.coins, greaterThan(100));
+    expect(find.text('Pisklak'), findsWidgets);
   });
 }

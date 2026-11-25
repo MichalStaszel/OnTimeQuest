@@ -1,28 +1,56 @@
-import 'dart:ui' show Color;
+import 'dart:ui' show Color, FontVariation, FontWeight;
 
-/// "Zmierzch" palette from the first mockups.
+import 'package:material_ui/material_ui.dart' show TextStyle;
+
+/// Palette from the end-to-end design (v0.4): calm, mature dark UI.
+/// Pixel art only lives inside scenes and sprites.
 abstract final class Palette {
-  static const night = Color(0xFF110F1C); // page ground
-  static const ink = Color(0xFF1D1A2F); // outlines, screen ground
-  static const plum = Color(0xFF3B2D5C); // panels
-  static const plumDeep = Color(0xFF2A2244); // deep panels
-  static const lavender = Color(0xFFB9A7E8); // muted text
-  static const paper = Color(0xFFF4EFFF); // main text
-  static const mint = Color(0xFF5FD3A5); // on time, Done
-  static const mintDark = Color(0xFF2F9C78);
-  static const amber = Color(0xFFFFB347); // mascot, +5, warnings
-  static const amberDark = Color(0xFFD9822B);
-  static const tomato = Color(0xFFFF5E5B); // late
-  static const sky = Color(0xFF7EC8E3); // info
-  static const gold = Color(0xFFFFE066); // points
-  static const black = Color(0xFF000000);
+  static const bg = Color(0xFF080D17); // page ground
+  static const app = Color(0xFF0D1422); // screen ground
+  static const card = Color(0xFF141D2F);
+  static const card2 = Color(0xFF1A2540);
+  static const line = Color(0xFF24314D);
+  static const tabs = Color(0xFF0B111D);
+  static const text = Color(0xFFECF2FB);
+  static const muted = Color(0xFF93A3BF);
+  static const faint = Color(0xFF5F6F8C);
+  static const gold = Color(0xFFFFD27A); // points, primary action
+  static const goldStrong = Color(0xFFF3B44B);
+  static const teal = Color(0xFF62DCC4); // on time, Done
+  static const rose = Color(0xFFFF8A80); // late (soft, never alarming)
+  static const lilac = Color(0xFFB7A4FF); // evolution
+  static const onAccent = Color(0xFF0B1220); // text on gold/teal buttons
 }
 
-/// Font families bundled in assets/fonts (all OFL, all with Polish glyphs).
-/// Pixel fonts only for the logo, short headings and clock digits; all
-/// running text uses a readable sans so longer copy stays easy to read.
+/// Font families bundled in assets/fonts (both SIL OFL, with Polish glyphs).
 abstract final class Fonts {
-  static const logo = 'PressStart2P'; // logo, short headings, buttons
-  static const ui = 'SpaceGrotesk'; // all body and UI text
-  static const numbers = 'VT323'; // clocks and timers
+  static const text = 'Lexend'; // all UI text
+  static const numbers = 'VT323'; // clocks, durations, points
 }
+
+/// Text style with a weight that also works for the variable Lexend font
+/// (sets the `wght` axis, not just the synthetic weight).
+TextStyle ts({
+  double size = 15,
+  int weight = 400,
+  Color color = Palette.text,
+  double? height,
+  String family = Fonts.text,
+  double? letterSpacing,
+}) {
+  return TextStyle(
+    fontFamily: family,
+    fontSize: size,
+    fontWeight: FontWeight.values[(weight ~/ 100 - 1).clamp(0, 8)],
+    fontVariations: family == Fonts.text
+        ? [FontVariation.weight(weight.toDouble())]
+        : null,
+    color: color,
+    height: height,
+    letterSpacing: letterSpacing,
+  );
+}
+
+/// VT323 numbers ("09:55", "+143").
+TextStyle numStyle(double size, {Color color = Palette.text}) =>
+    ts(size: size, family: Fonts.numbers, color: color, height: 0.95);

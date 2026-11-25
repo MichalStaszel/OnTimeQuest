@@ -6,8 +6,8 @@ import '../models/block.dart';
 import '../state/app_state.dart';
 import '../theme/palette.dart';
 import '../widgets/dialogs.dart';
-import '../widgets/pixel_sprite.dart';
-import '../widgets/pixel_ui.dart';
+import '../art/sprites.dart';
+import '../widgets/ui.dart';
 
 /// Create or edit a saved set: a name plus an ordered list of blocks.
 class SetEditScreen extends StatefulWidget {
@@ -44,12 +44,12 @@ class _SetEditScreenState extends State<SetEditScreen> {
     final total = _items.fold(0, (a, e) => a + e.block.minutes);
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.set == null ? 'NOWY ZESTAW' : 'ZESTAW'),
+        title: Text(widget.set == null ? 'Nowy zestaw' : 'Zestaw'),
         actions: [
           if (widget.set != null)
             IconButton(
               tooltip: 'Usuń zestaw',
-              icon: const Icon(Icons.delete, color: Palette.tomato),
+              icon: const Icon(Icons.delete, color: Palette.rose),
               onPressed: () async {
                 if (!await confirm(context, 'Usunąć zestaw?', yes: 'Usuń')) {
                   return;
@@ -84,7 +84,7 @@ class _SetEditScreenState extends State<SetEditScreen> {
                     style: const TextStyle(
                       fontFamily: Fonts.numbers,
                       fontSize: 24,
-                      color: Palette.amber,
+                      color: Palette.gold,
                     ),
                   ),
                 ],
@@ -101,11 +101,11 @@ class _SetEditScreenState extends State<SetEditScreen> {
                   return ListTile(
                     key: _items[i].key,
                     contentPadding: EdgeInsets.zero,
-                    leading: PixelSprite(Sprites.forIcon(b.icon), scale: 1.5),
+                    leading: SpriteBox(Sprites.forIcon(b.icon), size: 28),
                     title: Text(b.name),
                     subtitle: Text(
                       '${b.minutes} min',
-                      style: const TextStyle(color: Palette.lavender),
+                      style: const TextStyle(color: Palette.muted),
                     ),
                     trailing: IconButton(
                       tooltip: 'Usuń z zestawu',
@@ -129,9 +129,9 @@ class _SetEditScreenState extends State<SetEditScreen> {
                           children: [
                             for (final b in app.blocks)
                               ListTile(
-                                leading: PixelSprite(
+                                leading: SpriteBox(
                                   Sprites.forIcon(b.icon),
-                                  scale: 1.5,
+                                  size: 28,
                                 ),
                                 title: Text(b.name),
                                 trailing: Text('${b.minutes} min'),
@@ -150,8 +150,12 @@ class _SetEditScreenState extends State<SetEditScreen> {
                     label: const Text('dodaj blok'),
                   ),
                   const Spacer(),
-                  PixelButton(
-                    label: 'ZAPISZ',
+                  FilledButton(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Palette.gold,
+                      foregroundColor: Palette.onAccent,
+                    ),
+                    child: const Text('Zapisz'),
                     onPressed: () {
                       final name = _name.text.trim();
                       if (name.isEmpty || _items.isEmpty) return;

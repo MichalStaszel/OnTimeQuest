@@ -54,14 +54,14 @@ class _TextDialogState extends State<_TextDialog> {
         ),
         TextButton(
           onPressed: () => Navigator.pop(context, _controller.text.trim()),
-          child: const Text('OK', style: TextStyle(color: Palette.mint)),
+          child: const Text('OK'),
         ),
       ],
     );
   }
 }
 
-/// Minutes stepper (−5 −1 +1 +5).
+/// Minutes stepper: − 25 min +, long-press steps by 5.
 class MinutesStepper extends StatelessWidget {
   const MinutesStepper({
     super.key,
@@ -74,34 +74,43 @@ class MinutesStepper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget btn(int delta) => Expanded(
-      child: TextButton(
-        onPressed: () => onChanged((value + delta).clamp(1, 600)),
-        child: Text(
-          delta > 0 ? '+$delta' : '$delta',
-          style: const TextStyle(fontFamily: Fonts.numbers, fontSize: 24),
+    Widget btn(IconData icon, int delta) => Material(
+      color: Palette.card2,
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: () => onChanged((value + delta).clamp(1, 600)),
+        onLongPress: () => onChanged((value + delta * 5).clamp(1, 600)),
+        child: SizedBox.square(
+          dimension: 44,
+          child: Icon(icon, color: Palette.text),
         ),
       ),
     );
-    return Row(
-      children: [
-        btn(-5),
-        btn(-1),
-        SizedBox(
-          width: 90,
-          child: Text(
-            '$value min',
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontFamily: Fonts.numbers,
-              fontSize: 30,
-              color: Palette.amber,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      decoration: BoxDecoration(
+        color: Palette.card,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Palette.line),
+      ),
+      child: Row(
+        children: [
+          btn(Icons.remove, -1),
+          Expanded(
+            child: Column(
+              children: [
+                Text('$value min', style: numStyle(38)),
+                Text(
+                  'czas trwania · przytrzymaj ±5',
+                  style: ts(size: 11, color: Palette.muted),
+                ),
+              ],
             ),
           ),
-        ),
-        btn(1),
-        btn(5),
-      ],
+          btn(Icons.add, 1),
+        ],
+      ),
     );
   }
 }
@@ -128,7 +137,7 @@ Future<int?> askMinutes(
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, value),
-            child: const Text('OK', style: TextStyle(color: Palette.mint)),
+            child: const Text('OK'),
           ),
         ],
       ),
@@ -152,7 +161,7 @@ Future<bool> confirm(
         ),
         TextButton(
           onPressed: () => Navigator.pop(ctx, true),
-          child: Text(yes, style: const TextStyle(color: Palette.tomato)),
+          child: Text(yes, style: const TextStyle(color: Palette.rose)),
         ),
       ],
     ),

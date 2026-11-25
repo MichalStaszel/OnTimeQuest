@@ -1,167 +1,124 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:ontime_quest/app.dart';
-import 'package:ontime_quest/data/local_store.dart';
-import 'package:ontime_quest/state/app_state.dart';
-import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
-final _planList = find
-    .descendant(
-      of: find.byType(ReorderableListView),
-      matching: find.byType(Scrollable),
-    )
-    .first;
+import 'helpers.dart';
 
-Future<void> scrollTo(WidgetTester t, String text) async {
-  await t.scrollUntilVisible(find.text(text), 300, scrollable: _planList);
-  await t.pumpAndSettle();
-}
-
-Future<AppState> boot(WidgetTester tester) async {
-  tester.view.physicalSize = const Size(1080, 2400);
-  tester.view.devicePixelRatio = 2.75;
-  addTearDown(tester.view.reset);
-  SharedPreferences.setMockInitialValues({});
-  final app = AppState(
-    await LocalStore.open(),
-    clock: () => DateTime(2026, 11, 25, 9, 50),
-  );
-  await tester.pumpWidget(
-    ChangeNotifierProvider.value(value: app, child: const OnTimeQuestApp()),
-  );
-  await tester.pumpAndSettle();
-  return app;
-}
-
+/// Clicks through every screen to catch framework assertions (like the
+/// disposed-controller crash Michał hit) before they reach a phone.
 void main() {
-  testWidgets('edit title dialog', (t) async {
-    await boot(t);
-    await t.tap(find.text('Dentysta'));
-    await t.pumpAndSettle();
-    await t.enterText(find.byType(TextField), 'Praca');
-    await t.tap(find.text('OK'));
-    await t.pumpAndSettle();
-    expect(find.text('Praca'), findsOneWidget);
-    // Michał's repro: open the same dialog again after renaming.
-    await t.tap(find.text('Praca'));
-    await t.pumpAndSettle();
-    await t.tap(find.text('Anuluj'));
-    await t.pumpAndSettle();
-    expect(find.text('Praca'), findsOneWidget);
-  });
+  testWidgets(
+    'new mission: title, time, day, set, block, reorder, dismiss, save',
+    (t) async {
+      final clock = TestClock();
+      final app = await bootApp(t, clock);
+      await tapText(t, 'Plan');
+      await tapText(t, 'Nowa misja');
+      expect(find.text('Nowa misja'), findsWidgets);
 
-  testWidgets('time picker', (t) async {
-    await boot(t);
-    await t.tap(find.text('12:00').first);
-    await t.pumpAndSettle();
-    await t.tap(find.text('OK'));
-    await t.pumpAndSettle();
-  });
+      await t.enterText(find.byType(TextField), 'Siłownia');
+      await tapText(t, 'Muszę być');
+      await tapText(t, 'OK');
+      await tapText(t, 'dziś');
+      await tapText(t, 'Użyj zestawu');
+      await tapText(t, 'Wyjście na siłownię');
+      expect(find.text('Pakowanie'), findsOneWidget);
 
-  testWidgets('step minutes dialog', (t) async {
-    await boot(t);
-    await t.tap(find.text('Prysznic'));
-    await t.pumpAndSettle();
-    await t.tap(find.text('+5'));
+      // minutes dialog on a step
+      await tapText(t, 'Pakowanie');
+      await t.tap(find.byIcon(Icons.add).last);
+      await t.pump();
+      await tapText(t, 'OK');
+      expect(find.text('6'), findsOneWidget);
+
+      // reorder by the handle
+      final g = await t.startGesture(
+        t.getCenter(find.byIcon(Icons.drag_indicator).first),
+      );
+      await t.pump(const Duration(milliseconds: 100));
+      await g.moveBy(const Offset(0, 120));
+      await t.pump(const Duration(milliseconds: 100));
+      await g.up();
+      await t.pumpAndSettle();
+
+      // swipe to delete
+      await t.drag(find.text('Zapas'), const Offset(-500, 0));
+      await t.pumpAndSettle();
+      expect(find.text('Zapas'), findsNothing);
+
+      // add a block from the library sheet
+      await tapText(t, 'dodaj blok');
+      await tapText(t, 'Prysznic');
+      expect(find.text('Prysznic'), findsOneWidget);
+
+      await tapText(t, 'Zapisz');
+      expect(app.missions.map((m) => m.title), contains('Siłownia'));
+      expect(find.text('Siłownia'), findsOneWidget);
+    },
+  );
+
+  testWidgets('new block from the mission sheet, then block library editing', (
+    t,
+  ) async {
+    final clock = TestClock();
+    final app = await bootApp(t, clock);
+    await tapText(t, 'Plan');
+    await tapText(t, 'Dentysta');
+    await tapText(t, 'dodaj blok');
+    await tapText(t, 'Nowy blok');
+    await t.enterText(find.byType(TextField).last, 'Kawa');
+    await t.tap(find.byIcon(Icons.add).last);
     await t.pump();
-    await t.tap(find.text('OK'));
-    await t.pumpAndSettle();
-    expect(find.text('30'), findsWidgets);
-  });
+    await tapText(t, 'Zapisz');
+    expect(app.blocks.any((b) => b.name == 'Kawa' && b.minutes == 11), isTrue);
+    expect(find.text('Kawa'), findsOneWidget);
+    await tapText(t, 'Anuluj');
 
-  testWidgets('dismiss step', (t) async {
-    await boot(t);
-    await t.drag(find.text('Prasowanie'), const Offset(-500, 0));
-    await t.pumpAndSettle();
-    expect(find.text('Prasowanie'), findsNothing);
-  });
+    await tapText(t, 'Bloki');
+    await tapText(t, 'Kawa');
+    await tapText(t, 'Usuń blok');
+    await tapText(t, 'Usuń');
+    expect(app.blocks.any((b) => b.name == 'Kawa'), isFalse);
 
-  testWidgets('reorder step', (t) async {
-    await boot(t);
-    final handle = find.byIcon(Icons.drag_indicator).first;
-    final g = await t.startGesture(t.getCenter(handle));
-    await t.pump(const Duration(milliseconds: 100));
-    await g.moveBy(const Offset(0, 150));
-    await t.pump(const Duration(milliseconds: 100));
-    await g.moveBy(const Offset(0, 100));
-    await t.pump();
-    await g.up();
-    await t.pumpAndSettle();
-  });
-
-  testWidgets('add block and load set via sheets', (t) async {
-    await boot(t);
-    await scrollTo(t, 'blok');
-    await t.tap(find.text('blok'));
-    await t.pumpAndSettle();
-    await t.tap(find.text('Ubieranie').last);
-    await t.pumpAndSettle();
-    await t.tap(find.text('wczytaj zestaw'));
-    await t.pumpAndSettle();
-    await t.tap(find.text('Poranek do pracy'));
-    await t.pumpAndSettle();
-    await scrollTo(t, 'zapisz jako zestaw');
-    await t.tap(find.text('zapisz jako zestaw'));
-    await t.pumpAndSettle();
-    await t.enterText(find.byType(TextField), 'Nowy');
-    await t.tap(find.text('OK'));
-    await t.pumpAndSettle();
-  });
-
-  testWidgets('blocks tab: edit block, new block, sets editor', (t) async {
-    await boot(t);
-    await t.tap(find.text('Bloki'));
-    await t.pumpAndSettle();
-    await t.tap(find.text('Prysznic'));
-    await t.pumpAndSettle();
-    await t.enterText(find.byType(TextField), 'Kąpiel');
-    await t.tap(find.text('ZAPISZ'));
-    await t.pumpAndSettle();
-    await t.tap(find.text('nowy blok'));
-    await t.pumpAndSettle();
-    await t.enterText(find.byType(TextField), 'Kawa');
-    await t.tap(find.text('ZAPISZ'));
-    await t.pumpAndSettle();
-    await t.tap(find.text('Kawa'));
-    await t.pumpAndSettle();
-    await t.tap(find.text('Usuń'));
-    await t.pumpAndSettle();
-    await t.tap(find.text('Usuń').last);
-    await t.pumpAndSettle();
-    await t.scrollUntilVisible(
-      find.text('Poranek do pracy'),
-      200,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await t.tap(find.text('Poranek do pracy'));
-    await t.pumpAndSettle();
+    await tapText(t, 'Poranek do pracy');
     await t.tap(find.byIcon(Icons.close).first);
     await t.pumpAndSettle();
-    await t.tap(find.text('dodaj blok'));
-    await t.pumpAndSettle();
-    await t.tap(find.text('Zapas').last);
-    await t.pumpAndSettle();
-    await t.tap(find.text('ZAPISZ'));
-    await t.pumpAndSettle();
-    await t.tap(find.text('Plan'));
-    await t.pumpAndSettle();
+    await tapText(t, 'Zapisz');
   });
 
-  testWidgets('countdown +5 and abort, then progress tab', (t) async {
-    await boot(t);
-    await scrollTo(t, 'START GRY');
-    await t.tap(find.text('START GRY'));
-    await t.pumpAndSettle();
-    await t.ensureVisible(find.text('+5 MIN'));
-    await t.pumpAndSettle();
-    await t.tap(find.text('+5 MIN'));
-    await t.pump(const Duration(seconds: 2));
+  testWidgets('countdown: +5 and abort; shop and progress tabs', (t) async {
+    final clock = TestClock();
+    final app = await bootApp(t, clock);
+    await tapText(t, 'Zacznij teraz · +20 za wcześniejszy start');
+    await tapText(t, '+5 min');
+    expect(app.session!.extraMinutes, 5);
     await t.tap(find.byIcon(Icons.close));
     await t.pumpAndSettle();
-    await t.tap(find.text('Przerwij'));
-    await t.pumpAndSettle();
-    await t.tap(find.text('Postęp'));
-    await t.pumpAndSettle();
+    await tapText(t, 'Przerwij');
+    expect(app.session, isNull);
+
+    await tapText(t, 'Tiko');
+    expect(find.text('Jajko'), findsWidgets);
+    await tapText(t, 'Lampka');
+    expect(find.textContaining('Brakuje'), findsOneWidget);
+
+    await tapText(t, 'Postęp');
+    expect(find.text('Średnie spóźnienie'), findsOneWidget);
+  });
+
+  testWidgets('late arrival: honest late, then correcting it back', (t) async {
+    final clock = TestClock();
+    final app = await bootApp(t, clock);
+    await tapText(t, 'Zacznij teraz · +20 za wcześniejszy start');
+    for (var i = 0; i < 5; i++) {
+      clock.now = clock.now.add(const Duration(minutes: 40));
+      await tapText(t, 'Gotowe');
+    }
+    expect(find.textContaining('Spóźnienie'), findsWidgets);
+    expect(find.text('Uczciwe „spóźniłem się”'), findsOneWidget);
+    await tapText(t, 'Byłem na czas');
+    expect(find.text('Na czas'), findsOneWidget);
+    await tapText(t, 'Spóźniłem się');
+    await tapText(t, 'Nakarm Tiko');
+    expect(app.arrivals.single.onTime, isFalse);
   });
 }

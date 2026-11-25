@@ -4,7 +4,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/block.dart';
 import '../models/history.dart';
-import '../models/plan.dart';
+import '../models/companion.dart';
+import '../models/mission.dart';
 import '../models/run_session.dart';
 
 /// Everything is stored on the device as JSON in shared_preferences.
@@ -19,7 +20,9 @@ class LocalStore {
 
   static const _kBlocks = 'blocks.v1';
   static const _kSets = 'sets.v1';
-  static const _kPlan = 'plan.v1';
+  static const _kMissions = 'missions.v1';
+  static const _kCompanion = 'companion.v1';
+  static const _kLearned = 'history.learned.v1';
   static const _kSession = 'session.v1';
   static const _kSteps = 'history.steps.v1';
   static const _kArrivals = 'history.arrivals.v1';
@@ -53,15 +56,24 @@ class LocalStore {
   Future<void> saveArrivals(List<ArrivalRecord> v) =>
       _writeList(_kArrivals, v.map((e) => e.toJson()).toList());
 
-  Plan? loadPlan() {
-    final raw = _prefs.getString(_kPlan);
+  List<Mission>? loadMissions() => _readList(_kMissions, Mission.fromJson);
+  Future<void> saveMissions(List<Mission> v) =>
+      _writeList(_kMissions, v.map((e) => e.toJson()).toList());
+
+  List<LearnedBlock> loadLearned() =>
+      _readList(_kLearned, LearnedBlock.fromJson) ?? [];
+  Future<void> saveLearned(List<LearnedBlock> v) =>
+      _writeList(_kLearned, v.map((e) => e.toJson()).toList());
+
+  CompanionState loadCompanion() {
+    final raw = _prefs.getString(_kCompanion);
     return raw == null
-        ? null
-        : Plan.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+        ? const CompanionState()
+        : CompanionState.fromJson(jsonDecode(raw) as Map<String, dynamic>);
   }
 
-  Future<void> savePlan(Plan p) =>
-      _prefs.setString(_kPlan, jsonEncode(p.toJson()));
+  Future<void> saveCompanion(CompanionState c) =>
+      _prefs.setString(_kCompanion, jsonEncode(c.toJson()));
 
   RunSession? loadSession() {
     final raw = _prefs.getString(_kSession);

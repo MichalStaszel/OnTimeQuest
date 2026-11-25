@@ -1,15 +1,16 @@
 # OnTime Quest
 
 A real-life game for people who are always late. You say when you must
-**arrive**, the app plans your blocks backwards, tells you when to start, and
-turns each block into a countdown stage with **Gotowe** (Done) and **+5 min**.
+**arrive**, the app plans your blocks backwards and tells you when to start.
+Each block becomes a countdown stage with **Gotowe** (Done) and **+5 min**.
+Arriving on time feeds and grows your companion, **Tiko**.
 
 Android first, iOS later. Flutter, local storage only, no backend.
-UI copy is Polish for the first friend test.
+UI copy is in Polish for the first friend test.
 
-| Plan | Blocks & sets | Countdown | Arrival |
-|---|---|---|---|
-| ![](docs/screenshots/1_plan.png) | ![](docs/screenshots/3_blocks.png) | ![](docs/screenshots/4_countdown.png) | ![](docs/screenshots/5_arrival.png) |
+| Today | Mission | Countdown | Reward | Tiko | Progress |
+|---|---|---|---|---|---|
+| ![](docs/screenshots/03_today.png) | ![](docs/screenshots/04_mission.png) | ![](docs/screenshots/06_countdown.png) | ![](docs/screenshots/07_reward.png) | ![](docs/screenshots/08_tiko.png) | ![](docs/screenshots/09_progress.png) |
 
 ## Run it
 
@@ -23,58 +24,58 @@ flutter analyze
 flutter build apk      # debug-signed APK in build/app/outputs/flutter-apk/
 ```
 
-> Note: since Flutter 3.4x the Material widgets come from the
-> `material_ui` package (`import 'package:material_ui/material_ui.dart';`),
-> not `package:flutter/material.dart`.
+> Since Flutter 3.4x the Material widgets come from the `material_ui`
+> package (`import 'package:material_ui/material_ui.dart';`).
 
 ## What works
 
-- **Plan backwards**: set the mission name and arrival time; the timeline
-  shows when each block starts and the big "zacznij o" start time. If the
-  start time has passed it tells you to go now.
-- **Plan editing**: add blocks, load a saved set, drag to reorder, swipe to
-  delete, tap a block to change its minutes for today only, save the plan as
-  a new set.
-- **Blocks & sets** tab: create/edit/delete reusable blocks (name, minutes,
-  pixel icon) and ordered sets.
-- **Countdown ("game")**: stage X/N, big timer, life bar, Tiko running on a
-  track next to a ghost Tiko showing where you should be, "x min behind /
-  ahead" with projected arrival, **Gotowe** and **+5 min**. The session is
-  stored as timestamps, so it survives the app being killed and reopens on
-  launch.
-- **Arrival**: "Na czas?" -> points (100 on time, +20 without +5, +5 per
-  streak day), streak and record. Being late only breaks the streak.
-- **Duration learning (basic)**: every "Gotowe" stores the real duration.
-  After 3+ runs, if the median of the last 7 differs by 3+ min, the plan shows
-  an amber badge ("32?"); tap it to update the block.
-- **Progress** tab: total points, streak, recent missions.
+- **Onboarding:** your name, then pick a companion. Tiko is available now;
+  Rudi (fox) and Garaż (car) are shown as "coming soon".
+- **Dziś (Today):** Tiko's room, meters (fed, mood, to evolution), the next
+  mission with its start time and "start now" (+20 if early), and later today.
+- **Plan:** missions grouped by day. **New mission:** goal, arrival time,
+  today/tomorrow/date, "use a set", blocks planned backwards (drag, swipe to
+  delete, tap for minutes), a "zwykle 32" hint from history, and start + alarm.
+- **Blocks & sets:** a library with a bottom sheet for icon, minutes, the
+  history hint ("Ustaw 32", +15), and toggles (sound, allow +5).
+- **Countdown:** a full-screen pixel street for the time of day
+  (dawn/day/dusk/night), a big clock, end time and when to leave, and a
+  small reward per stage (an apple). Gotowe / +5 min. Survives app restarts.
+- **Reward:** on time is decided by the clock (the last block is the trip).
+  Points are itemised: +100 on time, +2/min per block finished early (max 10),
+  +20 early start, +20 without +5, +5/day streak (max 50). An honest
+  "Spóźniłem się" gives +10. Food: an apple per block finished in time and a
+  cookie for arriving on time.
+- **Tiko:** feed, 5 evolution stages by on-time count (egg, chick at 1, Tiko
+  at 15, Wanderer at 40, ??? at 100), and a shop (apples, hat, plant, lamp).
+  Bought items show up in the room. No punishments: Tiko never dies or gets
+  sick, and fullness never drops below 20%.
+- **Postęp (Progress):** on-time % and average lateness (last 30 days vs your
+  first 5 missions), minutes late per week, the last 2 weeks, and the blocks
+  whose times were learned.
 
-## Not done yet (next steps)
+## Not done yet
 
-- Ongoing Android notification with **Gotowe / +5 min** actions and lock-screen
-  countdown (`flutter_local_notifications` + foreground service), plus the
-  "budzik" alarm before start.
-- Sound / voice cues.
-- Insight screen with the history chart (screen 6 of the mockups), levels.
-- Choosing a different day than today/tomorrow, multiple missions per day.
-- App icon, splash, final mascot art, English copy for the Play Store.
+- Android notification with Gotowe / +5 actions, the real alarm, and sounds.
+- Location-based arrival (it is a button for now).
+- Real art: everything is placeholder pixel art drawn in code (`lib/art/`).
+  This will be swapped for an AI-generated set later.
+- Rudi and Garaż companions, more scenes and items, recurring missions.
 
 ## Code map
 
 ```
 lib/
-  main.dart             app entry, wires LocalStore + AppState (provider)
-  app.dart              MaterialApp + theme
-  theme/                "Zmierzch" palette, fonts, ThemeData
-  models/               Block, BlockSet, Plan/PlanStep, RunSession, history
-  logic/planner.dart    planBackwards, suggestions, points, streaks (pure, tested)
-  data/                 LocalStore (shared_preferences JSON) + starter data
-  state/app_state.dart  the one ChangeNotifier screens talk to
-  widgets/              pixel sprites, pixel buttons/panels, dialogs
-  screens/              plan, blocks, set editor, countdown, arrival, progress
-test/                   planner, app state, and a full-flow widget test
-assets/fonts/           Press Start 2P, Space Grotesk, VT323 (SIL OFL)
+  main.dart, app.dart     entry, provider wiring, theme
+  theme/                  design palette, Lexend/VT323, ts() text helper
+  art/                    sprites, pixel canvas (dither, glow, clouds), scenes
+  models/                 Block/BlockSet, Mission/PlanStep, RunSession,
+                          CompanionState + stages + shop, history
+  logic/                  planner (backwards, learning, streak), rewards, format
+  data/                   LocalStore (shared_preferences JSON) + starter data
+  state/app_state.dart    the one ChangeNotifier screens talk to
+  screens/                onboarding, today, missions, mission editor, blocks,
+                          set editor, countdown, reward, companion, progress
+test/                     planner + rewards, app state, full-flow widget tests
+assets/fonts/             Lexend, VT323 (SIL OFL)
 ```
-
-Pixel sprites (Tiko, block icons) are drawn from character grids in
-`lib/widgets/pixel_sprite.dart`, copied from the mockups; swap for PNGs later.

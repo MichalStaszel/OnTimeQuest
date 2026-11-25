@@ -1,4 +1,4 @@
-import '../models/plan.dart';
+import '../models/mission.dart';
 
 /// A plan step placed on the clock.
 class ScheduledStep {
@@ -76,20 +76,6 @@ int? suggestedMinutes(
   final minutes = (medianSec / 60).round();
   if (minutes < 1) return null;
   return (minutes - plannedMinutes).abs() >= minDiff ? minutes : null;
-}
-
-/// Points for one mission. Being late only breaks the streak, it does
-/// not take points away (see mockup screen 5).
-int pointsFor({
-  required bool onTime,
-  required bool usedPlusFive,
-  required int streak,
-}) {
-  if (!onTime) return 0;
-  var p = 100;
-  if (!usedPlusFive) p += 20;
-  if (streak > 1) p += 5 * (streak - 1).clamp(0, 10);
-  return p;
 }
 
 /// Consecutive days, ending with the most recent mission's day, on which
