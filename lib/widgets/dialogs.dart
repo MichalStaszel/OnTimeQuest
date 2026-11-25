@@ -3,34 +3,62 @@ import 'package:material_ui/material_ui.dart';
 import '../theme/palette.dart';
 
 /// Asks for a short text (mission name, set name).
+///
+/// The controller lives in a State so it is disposed only after the dialog's
+/// exit animation ends. Disposing it when the Future completes crashes,
+/// because the TextField is still on screen while the dialog fades out.
 Future<String?> askText(
   BuildContext context, {
   required String title,
   String initial = '',
 }) {
-  final controller = TextEditingController(text: initial);
   return showDialog<String>(
     context: context,
-    builder: (ctx) => AlertDialog(
-      title: Text(title),
+    builder: (_) => _TextDialog(title: title, initial: initial),
+  );
+}
+
+class _TextDialog extends StatefulWidget {
+  const _TextDialog({required this.title, required this.initial});
+
+  final String title;
+  final String initial;
+
+  @override
+  State<_TextDialog> createState() => _TextDialogState();
+}
+
+class _TextDialogState extends State<_TextDialog> {
+  late final _controller = TextEditingController(text: widget.initial);
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.title),
       content: TextField(
-        controller: controller,
+        controller: _controller,
         autofocus: true,
         textCapitalization: TextCapitalization.sentences,
-        onSubmitted: (v) => Navigator.pop(ctx, v.trim()),
+        onSubmitted: (v) => Navigator.pop(context, v.trim()),
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.pop(ctx),
+          onPressed: () => Navigator.pop(context),
           child: const Text('Anuluj'),
         ),
         TextButton(
-          onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+          onPressed: () => Navigator.pop(context, _controller.text.trim()),
           child: const Text('OK', style: TextStyle(color: Palette.mint)),
         ),
       ],
-    ),
-  ).whenComplete(controller.dispose);
+    );
+  }
 }
 
 /// Minutes stepper (−5 −1 +1 +5).
