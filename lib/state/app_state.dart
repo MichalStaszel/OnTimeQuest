@@ -13,6 +13,7 @@ import '../models/companion.dart';
 import '../models/history.dart';
 import '../models/mission.dart';
 import '../models/run_session.dart';
+import '../notifications/mission_notice.dart';
 
 /// Single app-wide state object. Screens read it with
 /// `context.watch<AppState>()` and call its methods to change things;
@@ -302,10 +303,10 @@ class AppState extends ChangeNotifier {
   }
 
   /// "Gotowe": record how long the step really took and move on.
-  void completeStep() {
+  void completeStep({DateTime? at}) {
     final s = _session;
     if (s == null || s.finished) return;
-    final t = now();
+    final t = at ?? now();
     final actual = t.difference(s.stepStartedAt).inSeconds;
     _stepHistory.add(
       StepRecord(
@@ -340,6 +341,24 @@ class AppState extends ChangeNotifier {
     _session = s.copyWith(extraMinutes: s.extraMinutes + 5, usedPlusFive: true);
     _store.saveSession(_session);
     notifyListeners();
+  }
+
+  /// A Gotowe / +5 pressed on a notification. Ignored when it belongs to a
+  /// block that is no longer current (an old notification).
+  bool applyNotificationAction(QueuedAction a) {
+    final s = _session;
+    if (s == null || s.finished || a.payload != stepPayload(s)) return false;
+    switch (a.action) {
+      case 'done':
+        final at = a.at.isBefore(s.stepStartedAt) ? s.stepStartedAt : a.at;
+        completeStep(at: at.isAfter(now()) ? now() : at);
+        return true;
+      case 'plus5':
+        if (!s.current.allowPlusFive) return false;
+        addFiveMinutes();
+        return true;
+    }
+    return false;
   }
 
   void abortSession() {

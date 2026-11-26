@@ -60,12 +60,35 @@ flutter build apk      # debug-signed APK in build/app/outputs/flutter-apk/
 
 ## Not done yet
 
-- Android notification with Gotowe / +5 actions and the real alarm. Sounds
-  only play while the countdown screen is open.
+- The alarm that starts a mission (before you open the app). In-app sounds
+  and the narrator only play while the countdown screen is open; in the
+  background you get the notification reminders instead.
 - Location-based arrival (it is a button for now).
 - Real art: everything is placeholder pixel art drawn in code (`lib/art/`).
   This will be swapped for an AI-generated set later.
 - Rudi and Garaż companions, more scenes and items, recurring missions.
+
+## Notifications (Android)
+
+While a mission runs (`lib/notifications/`):
+
+- **Ongoing notification:** block name, a live countdown to the end of the
+  block, a progress bar, what comes next and the projected arrival, with
+  **Gotowe** and **+5 min** buttons. A foreground service (type
+  `specialUse`) keeps it updating every 10 s while the app is minimised; it
+  stops when the mission ends or is aborted.
+- **Reminders:** heads-up "Za 2 min koniec: …" and "Czas minął: …",
+  scheduled as exact alarms for the current block. They are armed only when
+  the app is in the background, so they never double up with the in-app
+  sounds, and are re-planned after Gotowe or +5.
+- **Buttons when the app is not running:** a background handler queues the
+  press with its time; the app applies it on the next tick or start. A
+  press on an old notification (for a block that is already done) is
+  ignored.
+
+Permissions: notifications (asked when the first mission starts),
+`USE_EXACT_ALARM`, `FOREGROUND_SERVICE_SPECIAL_USE`. Both the special-use
+service and exact alarms need a short justification on Google Play later.
 
 ## Voice
 
@@ -94,6 +117,7 @@ lib/
                           CompanionState + stages + shop, history
   logic/                  planner (backwards, learning, streak), rewards, format
   audio/                  cue tracker, jingles, voice lines, sound player
+  notifications/          ongoing progress notification, reminders, buttons
   data/                   LocalStore (shared_preferences JSON) + starter data
   state/app_state.dart    the one ChangeNotifier screens talk to
   screens/                onboarding, today, missions, mission editor, blocks,

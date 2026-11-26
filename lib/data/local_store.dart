@@ -8,6 +8,7 @@ import '../models/history.dart';
 import '../models/companion.dart';
 import '../models/mission.dart';
 import '../models/run_session.dart';
+import '../notifications/mission_notice.dart';
 
 /// Everything is stored on the device as JSON in shared_preferences.
 /// Small data, no backend. Swap for sqflite/drift if history grows large.
@@ -28,6 +29,7 @@ class LocalStore {
   static const _kSteps = 'history.steps.v1';
   static const _kArrivals = 'history.arrivals.v1';
   static const _kSound = 'settings.sound.v1';
+  static const kQueuedActions = 'notifications.actions.v1';
 
   List<T>? _readList<T>(String key, T Function(Map<String, dynamic>) f) {
     final raw = _prefs.getString(key);
@@ -97,4 +99,28 @@ class LocalStore {
 
   Future<void> saveSound(SoundSettings s) =>
       _prefs.setString(_kSound, jsonEncode(s.toJson()));
+
+  /// Buttons pressed on notifications, saved by the background handler.
+  /// Returns and clears them.
+  Future<List<QueuedAction>> takeQueuedActions() async {
+    await _prefs.reload();
+    final raw = _prefs.getStringList(kQueuedActions);
+    if (raw == null || raw.isEmpty) return const [];
+    await _prefs.remove(kQueuedActions);
+    return [
+      for (final r in raw)
+        QueuedAction.fromJson(jsonDecode(r) as Map<String, dynamic>),
+    ]..sort((a, b) => a.at.compareTo(b.at));
+  }
+
+  /// Called from the notification background isolate.
+  static Future<void> queueAction(QueuedAction a) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.reload();
+    final list = prefs.getStringList(kQueuedActions) ?? [];
+    await prefs.setStringList(kQueuedActions, [
+      ...list,
+      jsonEncode(a.toJson()),
+    ]);
+  }
 }
