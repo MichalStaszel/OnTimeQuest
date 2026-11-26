@@ -335,12 +335,24 @@ PixelCanvas drawStreet(DayPhase phase) {
   return o;
 }
 
-/// Sprite for the companion at an evolution stage (0..4).
-Sprite companionSprite(int stage, {bool hop = false}) => switch (stage) {
-  0 => Sprites.egg,
-  1 => Sprites.baby,
-  2 => hop ? Sprites.tikoHop : Sprites.tiko,
-  _ => Sprites.tikoAdult,
-};
+/// Bare sprite for a companion at an evolution stage (0..4). See
+/// `composeCompanion` for the version with hat and perks.
+Sprite companionSprite(int stage, {bool hop = false, String species = 'tiko'}) {
+  if (species == 'car') {
+    return switch (stage) {
+      0 => Sprites.carWreck,
+      1 => Sprites.carRed,
+      2 => Sprites.carShiny,
+      3 => Sprites.carRace,
+      _ => Sprites.carGold,
+    };
+  }
+  return switch (stage) {
+    0 => Sprites.egg,
+    1 => Sprites.baby,
+    2 => hop ? Sprites.tikoHop : Sprites.tiko,
+    _ => Sprites.tikoAdult,
+  };
+}
 
 double clamp01(double v) => math.max(0, math.min(1, v));

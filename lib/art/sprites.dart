@@ -127,6 +127,74 @@ abstract final class Sprites {
     '...koowwwwookoo.',
     '....kkk..kkkkk..',
   ];
+  // ---- companion: the car (Kaszlak) through its stages, 23x11
+  static const Sprite carWreck = [
+    '.......kkkkkkkkk.......',
+    '......kgggggkggggk.....',
+    '.....kgkkgggkgkkgggk...',
+    '...kkkkkkkkkkkkkkkkkk..',
+    '..kbbAbbbbbbAbbbbbbbbk.',
+    '.kbAbbbbbbkbbbAbbbbbbbk',
+    'knbbbbbbbbkbbbbbbAbbbnk',
+    'knnnnnnnnnnnnnnnnnnnnnk',
+    '.kkkkgggkkkkkkkkgggkkk.',
+    '...kkgggk......kgwgkk..',
+    '...kkkkkk.......kkk....',
+  ];
+  static const Sprite carRed = [
+    '.......kkkkkkkkk.......',
+    '......kssssskssssk.....',
+    '.....kswkssskswksssk...',
+    '...kkkkkkkkkkkkkkkkkk..',
+    '..krrrrrrrrrrrrrrrrrrk.',
+    '.krrrrrrrrkrrrrrrrrrrrk',
+    'kyrrrrrrrrkrrrrrrrrrrrk',
+    'krrrrrrrrrrrrrrrrrrrrrk',
+    '.kkkkgggkkkkkkkkgggkkk.',
+    '...kkgwgk......kgwgkk..',
+    '.....kkk........kkk....',
+  ];
+  static const Sprite carShiny = [
+    '.......kkkkkkkkk.......',
+    '......kssssskssssk.....',
+    '.....kswkssskswksssk...',
+    '...kkkkkkkkkkkkkkkkkk..',
+    '..kmmmmmmmmmmmmmmmmmmk.',
+    '.kmmmmmmmmkmmmmmmmmmmmk',
+    'kymmmmmmmmkmmmmmmmmmmrk',
+    'kwwMMMMMMMMMMMMMMMMMwwk',
+    '.kkkkgggkkkkkkkkgggkkk.',
+    '...kkgwgk......kgwgkk..',
+    '.....kkk........kkk....',
+  ];
+  static const Sprite carRace = [
+    '.......kkkkkkkkk.......',
+    '......kssssskssssk.kkk.',
+    '.....kswkssskswkssskkkk',
+    '...kkkkkkkkkkkkkkkkkk..',
+    '..kssssssssssssssssssk.',
+    '.kssssssssksssssssssssk',
+    'kysssssssskssssssssssrk',
+    'kSSSSSSSSSSSSSSSSSSSSSk',
+    '.kkkkgggkkkkkkkkgggkkk.',
+    '...kkgwgk......kgwgkk..',
+    '.....kkk........kkk....',
+  ];
+  static const Sprite carGold = [
+    '.......kkkkkkkkk.......',
+    '......kssssskssssk.....',
+    '.....kswkssskswksssk...',
+    '...kkkkkkkkkkkkkkkkkk..',
+    '..kyyyyyyyyyyyyyyyyyyk.',
+    '.kyyyyyyyykyyyyyyyyyyyk',
+    'kyyyyyyyyykyyyyyyyyyyok',
+    'kaaaaaaaaaaaaaaaaaaaaak',
+    '.kkkkgggkkkkkkkkgggkkk.',
+    '...kkgwgk......kgwgkk..',
+    '.....kkk........kkk....',
+  ];
+
+  // ---- onboarding icon
   static const Sprite car = [
     '.....kkkkkkkk.......',
     '....kssskssssk......',
@@ -331,6 +399,15 @@ abstract final class Sprites {
     'kcccncck',
     '.kcccck.',
     '..kkkk..',
+  ];
+  static const Sprite sparkle = [
+    '...y...',
+    '...y...',
+    '..ywy..',
+    'yywwwyy',
+    '..ywy..',
+    '...y...',
+    '...y...',
   ];
   static const Sprite hat = [
     '....kkkk....',

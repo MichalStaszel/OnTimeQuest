@@ -51,10 +51,15 @@ class _HomeShellState extends State<HomeShell> {
   }
 
   Widget _tabs(int tab) {
+    final app = context.watch<AppState>();
+    // Minimal mode hides the companion tab.
+    final visible = app.minimal ? const [0, 1, 3] : const [0, 1, 2, 3];
+    final selected = visible.indexOf(tab);
+    final car = app.species.id == 'car';
     return Scaffold(
       body: SafeArea(
         child: IndexedStack(
-          index: tab,
+          index: selected < 0 ? 0 : tab,
           children: const [
             TodayScreen(),
             MissionsScreen(),
@@ -64,19 +69,25 @@ class _HomeShellState extends State<HomeShell> {
         ),
       ),
       bottomNavigationBar: NavigationBar(
-        selectedIndex: tab,
-        onDestinationSelected: _select,
-        destinations: const [
-          NavigationDestination(
+        selectedIndex: selected < 0 ? 0 : selected,
+        onDestinationSelected: (i) => _select(visible[i]),
+        destinations: [
+          const NavigationDestination(
             icon: Icon(Icons.wb_sunny_outlined),
             label: 'Dziś',
           ),
-          NavigationDestination(
+          const NavigationDestination(
             icon: Icon(Icons.event_note_outlined),
             label: 'Plan',
           ),
-          NavigationDestination(icon: Icon(Icons.pets_outlined), label: 'Tiko'),
-          NavigationDestination(
+          if (!app.minimal)
+            NavigationDestination(
+              icon: Icon(
+                car ? Icons.directions_car_outlined : Icons.pets_outlined,
+              ),
+              label: app.species.name,
+            ),
+          const NavigationDestination(
             icon: Icon(Icons.insights_outlined),
             label: 'Postęp',
           ),

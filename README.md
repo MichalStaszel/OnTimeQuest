@@ -29,8 +29,18 @@ flutter build apk      # debug-signed APK in build/app/outputs/flutter-apk/
 
 ## What works
 
-- **Onboarding:** your name, then pick a companion. Tiko is available now;
-  Rudi (fox) and Garaż (car) are shown as "coming soon".
+- **Onboarding:** your name, then pick a companion: Tiko, the car
+  (Kaszlak, from a wreck to a rally car) or none (minimal mode). Rudi (fox)
+  is shown as "coming soon". Companion and minimal mode can be changed
+  later in settings (gear on Dziś); progress is shared.
+- **Visible progress:** besides the 5 stages, perks unlock at 2/4/7/10
+  on-time arrivals (scarf or racing stripes, sparkles, gold ears or rims,
+  glow or neon). The reward screen announces what is new and shows the
+  next reward. The hat shows from the first stage. The companion is drawn
+  at 2x so all this is visible.
+- **Minimal mode:** no companion tab, room, points or apples; plain
+  countdown and a short summary after arrival. Points still count in the
+  background, so switching back loses nothing.
 - **Dziś (Today):** Tiko's room, meters (fed, mood, to evolution), the next
   mission with its start time and "start now" (+20 if early), and later today.
 - **Plan:** missions grouped by day. **New mission:** goal, arrival time,
@@ -66,7 +76,7 @@ flutter build apk      # debug-signed APK in build/app/outputs/flutter-apk/
 - Location-based arrival (it is a button for now).
 - Real art: everything is placeholder pixel art drawn in code (`lib/art/`).
   This will be swapped for an AI-generated set later.
-- Rudi and Garaż companions, more scenes and items, recurring missions.
+- Rudi the fox, more scenes and items, recurring missions.
 
 ## Notifications (Android)
 

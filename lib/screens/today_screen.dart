@@ -13,6 +13,7 @@ import '../widgets/ui.dart';
 import 'countdown_screen.dart';
 import 'home_shell.dart';
 import 'mission_edit_screen.dart';
+import '../art/companion_art.dart';
 
 /// Screen 02: the companion's room on top, one main action in the middle,
 /// the rest of the day below.
@@ -43,19 +44,21 @@ class _TodayScreenState extends State<TodayScreen> {
           over: longDate(now),
           trailing: Row(
             children: [
-              Pill(
-                text: pts(c.coins),
-                sprite: Sprites.coin,
-                color: Palette.gold,
-              ),
-              const SizedBox(width: 6),
+              if (!app.minimal) ...[
+                Pill(
+                  text: pts(c.coins),
+                  sprite: Sprites.coin,
+                  color: Palette.gold,
+                ),
+                const SizedBox(width: 6),
+              ],
               Pill(text: '${app.streak}', sprite: Sprites.flame),
               IconButton(
-                tooltip: 'Dźwięki',
+                tooltip: 'Ustawienia',
                 visualDensity: VisualDensity.compact,
-                onPressed: () => showSoundSheet(context),
-                icon: Icon(
-                  app.soundSettings.silent ? Icons.volume_off : Icons.volume_up,
+                onPressed: () => showSettingsSheet(context),
+                icon: const Icon(
+                  Icons.settings_outlined,
                   color: Palette.muted,
                   size: 22,
                 ),
@@ -63,42 +66,44 @@ class _TodayScreenState extends State<TodayScreen> {
             ],
           ),
         ),
-        const SizedBox(height: 12),
-        CompanionRoom(
-          bubble: running != null
-              ? 'Misja w toku: ${running.title}. Wracamy?'
-              : next == null
-              ? 'Nic dziś nie mamy. Zaplanujemy coś?'
-              : '${next.title} o ${hhmm(next.arriveAt)}. Startujemy o ${hhmm(next.startAt)}?',
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: Meter(
-                label: 'Najedzony',
-                value: app.fullness,
-                color: Palette.gold,
+        if (!app.minimal) ...[
+          const SizedBox(height: 12),
+          CompanionRoom(
+            bubble: running != null
+                ? 'Misja w toku: ${running.title}. Wracamy?'
+                : next == null
+                ? 'Nic dziś nie mamy. Zaplanujemy coś?'
+                : '${next.title} o ${hhmm(next.arriveAt)}. Startujemy o ${hhmm(next.startAt)}?',
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: Meter(
+                  label: 'Najedzony',
+                  value: app.fullness,
+                  color: Palette.gold,
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Meter(
-                label: 'Humor',
-                value: app.mood,
-                color: Palette.teal,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Meter(
+                  label: 'Humor',
+                  value: app.mood,
+                  color: Palette.teal,
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Meter(
-                label: 'Do ewolucji',
-                value: app.evolutionProgress,
-                color: Palette.lilac,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Meter(
+                  label: 'Do nagrody',
+                  value: app.unlockProgress,
+                  color: Palette.lilac,
+                ),
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
+        ],
         const SizedBox(height: 14),
         if (running != null)
           _RunningCard(
@@ -146,10 +151,13 @@ class _TodayScreenState extends State<TodayScreen> {
 
 /// The room scene with the companion as it is now (stage, hat, room items).
 class CompanionRoom extends StatelessWidget {
-  const CompanionRoom({super.key, this.bubble, this.feast = false});
+  const CompanionRoom({super.key, this.bubble, this.feast = false, this.look});
 
   final String? bubble;
   final bool feast;
+
+  /// Defaults to the companion as it is now.
+  final CompanionLook? look;
 
   @override
   Widget build(BuildContext context) {
@@ -177,8 +185,7 @@ class CompanionRoom extends StatelessWidget {
               draw: () => drawRoom(opt),
               sceneSize: roomSize,
               anchor: roomAnchor,
-              stage: app.stage,
-              hat: app.showsHat,
+              look: look ?? app.look,
             ),
             if (bubble != null)
               Positioned(left: 10, top: 10, child: Bubble(bubble!)),
@@ -370,5 +377,5 @@ class MissionTile extends StatelessWidget {
   }
 }
 
-/// Used by the reward screen's "Nakarm Tiko" button.
+/// Used by the reward screen's "Nakarm" button.
 void showCompanionTab() => HomeShell.tab.value = HomeShell.companion;

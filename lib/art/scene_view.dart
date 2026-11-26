@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 import 'package:material_ui/material_ui.dart';
 
 import 'pixel_canvas.dart';
+import 'companion_art.dart';
 import 'scenes.dart';
 import 'sprites.dart';
 
@@ -33,8 +34,8 @@ class SceneView extends StatefulWidget {
     required this.draw,
     required this.sceneSize,
     required this.anchor,
-    this.stage = 2,
-    this.hat = false,
+    this.look = const CompanionLook(),
+    this.zoom = 2,
     this.fit = BoxFit.fitWidth,
     this.animate = true,
   });
@@ -43,13 +44,56 @@ class SceneView extends StatefulWidget {
   final PixelCanvas Function() draw;
   final (int, int) sceneSize;
   final SceneAnchor anchor;
-  final int stage;
-  final bool hat;
+
+  /// The companion to draw; null draws the scene alone.
+  final CompanionLook? look;
+
+  /// The companion is drawn this many times bigger than the scene's pixels
+  /// so a hat, a scarf or gold rims are easy to see.
+  final int zoom;
   final BoxFit fit;
   final bool animate;
 
   @override
   State<SceneView> createState() => _SceneViewState();
+}
+
+const Sprite _sparkle = ['.y.', 'ywy', '.y.'];
+
+// Where sparkles twinkle, as fractions of the companion's box.
+const _sparklesA = [(-0.25, 0.15), (1.2, 0.45), (0.15, -0.35)];
+const _sparklesB = [(1.1, -0.1), (-0.2, 0.7), (0.85, -0.4)];
+
+/// Soft light: a warm halo around Tiko, a teal neon under the car.
+Widget _glow(CompanionLook l, double left, double top, double w, double h) {
+  if (l.isCar) {
+    return Positioned(
+      left: left - w * 0.1,
+      top: top + h * 0.75,
+      width: w * 1.2,
+      height: h * 0.6,
+      child: const DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: RadialGradient(
+            colors: [Color(0xCC5FD3A5), Color(0x005FD3A5)],
+          ),
+        ),
+      ),
+    );
+  }
+  return Positioned(
+    left: left - w * 0.6,
+    top: top - h * 0.5,
+    width: w * 2.2,
+    height: h * 2,
+    child: const DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: RadialGradient(
+          colors: [Color(0x80FFE066), Color(0x00FFE066)],
+        ),
+      ),
+    ),
+  );
 }
 
 class _SceneViewState extends State<SceneView> {
@@ -85,13 +129,19 @@ class _SceneViewState extends State<SceneView> {
             ? (byW > byH ? byW : byH)
             : byW;
         final width = sw * scale, height = sh * scale;
-        final sprite = companionSprite(widget.stage, hop: _hop);
+        final look = widget.look;
+        final tikoHop = look != null && !look.isCar && look.stage == 2;
+        final sprite = look == null
+            ? const <String>[]
+            : composeCompanion(look, hop: _hop);
         final spW = sprite.fold<int>(0, (m, r) => r.length > m ? r.length : m);
         final spH = sprite.length;
-        final left = (widget.anchor.x - spW / 2) * scale;
+        final z = widget.zoom;
+        final cs = scale * z; // companion pixel size
+        final left = widget.anchor.x * scale - spW / 2 * cs;
         final top =
-            (widget.anchor.y - spH - (_hop && widget.stage != 2 ? 1 : 0)) *
-            scale;
+            widget.anchor.y * scale - (spH + (_hop && !tikoHop ? 1 : 0)) * cs;
+        final perks = look?.perks ?? const <String>{};
         final scene = SizedBox(
           width: width,
           height: height,
@@ -110,17 +160,21 @@ class _SceneViewState extends State<SceneView> {
                       : const ColoredBox(color: Color(0xFF141D2F)),
                 ),
               ),
-              Positioned(
-                left: left,
-                top: top,
-                child: PixelSprite(sprite, scale: scale),
-              ),
-              if (widget.hat && widget.stage >= 2)
+              if (perks.contains('glow'))
+                _glow(look!, left, top, spW * cs, spH * cs),
+              if (look != null)
                 Positioned(
-                  left: left + (widget.stage == 2 ? 2 : 3) * scale,
-                  top: top + ((_hop && widget.stage == 2 ? 1 : 0) - 3) * scale,
-                  child: PixelSprite(Sprites.hat, scale: scale),
+                  left: left,
+                  top: top,
+                  child: PixelSprite(sprite, scale: cs),
                 ),
+              if (perks.contains('sparkles'))
+                for (final (dx, dy) in _hop ? _sparklesA : _sparklesB)
+                  Positioned(
+                    left: left + (spW * dx - 1.5) * cs,
+                    top: top + (spH * dy - 1.5) * cs,
+                    child: PixelSprite(_sparkle, scale: cs),
+                  ),
             ],
           ),
         );

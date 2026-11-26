@@ -35,6 +35,14 @@ Future<AppState> bootApp(
 }
 
 Future<void> tapText(WidgetTester t, String text) async {
+  if (find.text(text).evaluate().isEmpty) {
+    // Lazily built list: scroll until it is there.
+    await t.scrollUntilVisible(
+      find.text(text),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+  }
   await t.ensureVisible(find.text(text).last);
   await t.pumpAndSettle();
   await t.tap(find.text(text).last);

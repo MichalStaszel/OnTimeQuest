@@ -103,31 +103,34 @@ class _CountdownScreenState extends State<CountdownScreen> {
         body: Stack(
           fit: StackFit.expand,
           children: [
-            SceneView(
-              sceneKey: 'street-${phase.name}',
-              draw: () => drawStreet(phase),
-              sceneSize: streetSize,
-              anchor: streetAnchor,
-              stage: app.stage,
-              hat: app.showsHat,
-              fit: BoxFit.cover,
-            ),
-            // Soft darkening at the top and bottom so text stays readable.
-            const DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Color(0x99080D17),
-                    Color(0x00080D17),
-                    Color(0x00080D17),
-                    Color(0xB3080D17),
-                  ],
-                  stops: [0, 0.35, 0.6, 1],
+            if (app.minimal)
+              const ColoredBox(color: Palette.bg)
+            else ...[
+              SceneView(
+                sceneKey: 'street-${phase.name}',
+                draw: () => drawStreet(phase),
+                sceneSize: streetSize,
+                anchor: streetAnchor,
+                look: app.look,
+                fit: BoxFit.cover,
+              ),
+              // Soft darkening at the top and bottom so text stays readable.
+              const DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Color(0x99080D17),
+                      Color(0x00080D17),
+                      Color(0x00080D17),
+                      Color(0xB3080D17),
+                    ],
+                    stops: [0, 0.35, 0.6, 1],
+                  ),
                 ),
               ),
-            ),
+            ],
             SafeArea(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(12, 4, 16, 16),
@@ -219,13 +222,19 @@ class _CountdownScreenState extends State<CountdownScreen> {
                     _Glass(
                       child: Row(
                         children: [
-                          const SpriteBox(Sprites.apple, size: 22),
-                          const SizedBox(width: 10),
+                          if (!app.minimal) ...[
+                            const SpriteBox(Sprites.apple, size: 22),
+                            const SizedBox(width: 10),
+                          ],
                           Expanded(
                             child: Text(
-                              over
+                              app.minimal
+                                  ? (over
+                                        ? 'Czas etapu minął. Na miejsce wciąż możesz zdążyć.'
+                                        : 'Zmieść się w ${s.allowedMinutes} min, zanim pasek się skończy.')
+                                  : over
                                   ? 'Jabłka za ten etap już nie będzie, ale na miejsce wciąż możesz zdążyć.'
-                                  : 'Zmieść się w ${s.allowedMinutes} min, zanim pasek się skończy, a Tiko dostanie jabłko.',
+                                  : 'Zmieść się w ${s.allowedMinutes} min, zanim pasek się skończy, a ${app.species.name} dostanie jabłko.',
                               style: ts(size: 13),
                             ),
                           ),

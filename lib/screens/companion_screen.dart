@@ -8,6 +8,7 @@ import '../state/app_state.dart';
 import '../theme/palette.dart';
 import '../widgets/ui.dart';
 import 'today_screen.dart';
+import '../art/companion_art.dart';
 
 /// Screen 07: the companion's room, feeding, evolution path and shop.
 class CompanionScreen extends StatelessWidget {
@@ -18,13 +19,17 @@ class CompanionScreen extends StatelessWidget {
     final app = context.watch<AppState>();
     final c = app.companion;
     final stage = app.stage;
+    final sp = app.species;
+    final next = nextUnlock(sp, app.onTimeCount);
     final apples = c.food['apple'] ?? 0, cookies = c.food['cookie'] ?? 0;
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       children: [
         ScreenTitle(
-          stages[stage].name,
-          over: 'Etap ${stage + 1} z ${stages.length}',
+          sp.stages[stage].name == sp.name
+              ? sp.name
+              : '${sp.name} · ${sp.stages[stage].name}',
+          over: 'Etap ${stage + 1} z ${sp.stages.length}',
           trailing: Pill(
             text: pts(c.coins),
             sprite: Sprites.coin,
@@ -33,6 +38,33 @@ class CompanionScreen extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         const CompanionRoom(),
+        if (next != null) ...[
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Następna nagroda: ${next.name}',
+                  style: ts(size: 12.5, color: Palette.muted),
+                ),
+              ),
+              Text(
+                '${app.onTimeCount} / ${next.needed} na czas',
+                style: ts(size: 12.5, color: Palette.muted),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: app.unlockProgress,
+              minHeight: 6,
+              color: Palette.lilac,
+              backgroundColor: Palette.tabs,
+            ),
+          ),
+        ],
         const SizedBox(height: 12),
         Row(
           children: [
@@ -96,6 +128,22 @@ class CompanionScreen extends StatelessWidget {
                   index: i,
                   current: stage,
                   onTime: app.onTimeCount,
+                  species: sp,
+                ),
+              ),
+            ],
+          ],
+        ),
+        const SectionLabel('Nagrody za punktualność'),
+        Row(
+          children: [
+            for (var i = 0; i < perks.length; i++) ...[
+              if (i > 0) const SizedBox(width: 6),
+              Expanded(
+                child: _PerkSlot(
+                  index: i,
+                  species: sp,
+                  unlocked: app.onTimeCount >= perks[i].onTimeNeeded,
                 ),
               ),
             ],
@@ -123,15 +171,75 @@ class CompanionScreen extends StatelessWidget {
               contentPadding: EdgeInsets.zero,
               value: c.wearingHat,
               onChanged: (_) => app.toggleHat(),
-              title: Text('Tiko nosi czapkę', style: ts(size: 13.5)),
-              subtitle: stage < 2
-                  ? Text(
-                      'czapka pasuje od etapu Tiko',
-                      style: ts(size: 11.5, color: Palette.faint),
-                    )
-                  : null,
+              title: Text('${sp.name} nosi czapkę', style: ts(size: 13.5)),
             ),
           ),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          onPressed: () => app.setSpecies(sp.id == 'car' ? 'tiko' : 'car'),
+          icon: Icon(
+            sp.id == 'car'
+                ? Icons.pets_outlined
+                : Icons.directions_car_outlined,
+            size: 18,
+          ),
+          label: Text(
+            sp.id == 'car'
+                ? 'Zamień na Tiko (postęp zostaje)'
+                : 'Zamień na auto Kaszlak (postęp zostaje)',
+            style: ts(size: 13),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// One perk: preview when unlocked, silhouette and "N×" when not.
+class _PerkSlot extends StatelessWidget {
+  const _PerkSlot({
+    required this.index,
+    required this.species,
+    required this.unlocked,
+  });
+
+  final int index;
+  final Species species;
+  final bool unlocked;
+
+  @override
+  Widget build(BuildContext context) {
+    final perk = perks[index];
+    final sprite = switch (perk.id) {
+      'sparkles' => Sprites.sparkle,
+      'glow' => Sprites.flame,
+      _ => composeCompanion(
+        CompanionLook(species: species.id, stage: 1, perks: {perk.id}),
+      ),
+    };
+    return Column(
+      children: [
+        AspectRatio(
+          aspectRatio: 1,
+          child: Container(
+            decoration: BoxDecoration(
+              color: unlocked
+                  ? Palette.gold.withValues(alpha: 0.1)
+                  : Palette.card2,
+              borderRadius: BorderRadius.circular(10),
+              border: unlocked ? Border.all(color: Palette.gold) : null,
+            ),
+            child: Center(
+              child: SpriteBox(sprite, size: 36, silhouette: !unlocked),
+            ),
+          ),
+        ),
+        const SizedBox(height: 3),
+        Text(
+          unlocked ? species.perkNames[index] : '${perk.onTimeNeeded}× na czas',
+          style: ts(size: 10.5, color: Palette.muted),
+          overflow: TextOverflow.ellipsis,
+        ),
       ],
     );
   }
@@ -142,14 +250,17 @@ class _EvoSlot extends StatelessWidget {
     required this.index,
     required this.current,
     required this.onTime,
+    required this.species,
   });
 
   final int index;
   final int current;
   final int onTime;
+  final Species species;
 
   @override
   Widget build(BuildContext context) {
+    final stages = species.stages;
     final s = stages[index];
     final unlocked = index <= current;
     final isNow = index == current;
@@ -174,7 +285,7 @@ class _EvoSlot extends StatelessWidget {
               ),
               child: Center(
                 child: SpriteBox(
-                  companionSprite(index),
+                  companionSprite(index, species: species.id),
                   size: 40,
                   silhouette: !unlocked,
                 ),

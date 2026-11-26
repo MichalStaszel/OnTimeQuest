@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:material_ui/material_ui.dart';
 
+import '../art/companion_art.dart';
 import '../audio/sound_player.dart';
 import '../audio/sound_settings.dart';
 import '../data/defaults.dart';
@@ -82,15 +83,41 @@ class AppState extends ChangeNotifier {
 
   // ------------------------------------------------------------ onboarding
 
-  void completeOnboarding({required String name, required String companionId}) {
+  void completeOnboarding({
+    required String name,
+    required String companionId,
+    bool minimal = false,
+  }) {
     _setCompanion(
       _companion.copyWith(
         userName: name.trim(),
         companionId: companionId,
         fullnessAt: now(),
+        minimal: minimal,
       ),
     );
   }
+
+  /// Minimal mode: blocks and countdowns only, no companion on screen.
+  bool get minimal => _companion.minimal;
+  void setMinimal(bool v) => _setCompanion(_companion.copyWith(minimal: v));
+
+  /// The picked companion; progress is shared, so switching is free.
+  Species get species => speciesById(_companion.companionId);
+  void setSpecies(String id) =>
+      _setCompanion(_companion.copyWith(companionId: id));
+
+  /// Everything needed to draw the companion as it looks now.
+  CompanionLook get look => lookFor(onTimeCount);
+
+  /// How the companion looks with [count] on-time arrivals (the reward
+  /// screen shows the look after the one just made).
+  CompanionLook lookFor(int count) => CompanionLook(
+    species: species.id,
+    stage: stageFor(count),
+    hat: showsHat,
+    perks: perksFor(count),
+  );
 
   // ---------------------------------------------------------------- blocks
 
@@ -505,6 +532,20 @@ class AppState extends ChangeNotifier {
     if (s >= stages.length - 1) return 1;
     final from = stages[s].onTimeNeeded, to = stages[s + 1].onTimeNeeded;
     return ((onTimeCount - from) / (to - from)).clamp(0.0, 1.0);
+  }
+
+  /// Progress (0..1) towards the next visible reward (a perk or a stage).
+  double get unlockProgress {
+    final count = onTimeCount;
+    final next = nextUnlock(species, count);
+    if (next == null) return 1;
+    final marks = [
+      0,
+      for (final p in perks) p.onTimeNeeded,
+      for (final s in species.stages) s.onTimeNeeded,
+    ].where((m) => m <= count);
+    final from = marks.reduce((a, b) => a > b ? a : b);
+    return ((count - from) / (next.needed - from)).clamp(0.0, 1.0);
   }
 
   int get streak => currentStreak([

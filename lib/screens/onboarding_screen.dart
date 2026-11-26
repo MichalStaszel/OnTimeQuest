@@ -2,12 +2,13 @@ import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
 import '../art/sprites.dart';
+import '../models/companion.dart';
 import '../state/app_state.dart';
 import '../theme/palette.dart';
 import '../widgets/ui.dart';
 
-/// Screen 01: name, then pick a companion. Only Tiko is available in the
-/// MVP; the other two archetypes are shown as "wkrótce".
+/// Screen 01: name, then pick a companion (Tiko or the car), or none at
+/// all for minimal mode. The fox is shown as "wkrótce".
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
 
@@ -18,6 +19,9 @@ class OnboardingScreen extends StatefulWidget {
 class _OnboardingScreenState extends State<OnboardingScreen> {
   final _name = TextEditingController();
   int _step = 0;
+
+  /// 'tiko', 'car' or 'minimal' (no companion).
+  String _pick = 'tiko';
 
   @override
   void dispose() {
@@ -84,12 +88,22 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           style: ts(size: 14, color: Palette.muted, height: 1.45),
         ),
         const SizedBox(height: 18),
-        const _Pick(
-          selected: true,
+        _Pick(
+          selected: _pick == 'tiko',
+          onTap: () => setState(() => _pick = 'tiko'),
           sprite: Sprites.tiko,
-          gradient: [Color(0xFF3A2A52), Color(0xFF1C1530)],
+          gradient: const [Color(0xFF3A2A52), Color(0xFF1C1530)],
           name: 'Tiko',
-          text: 'Budzik-stworek. Ewoluuje w 5 etapach.',
+          text: tikoSpecies.pickText,
+        ),
+        const SizedBox(height: 10),
+        _Pick(
+          selected: _pick == 'car',
+          onTap: () => setState(() => _pick = 'car'),
+          sprite: Sprites.carWreck,
+          gradient: const [Color(0xFF1C3A4A), Color(0xFF0F1D26)],
+          name: 'Garaż',
+          text: carSpecies.pickText,
         ),
         const SizedBox(height: 10),
         const _Pick(
@@ -100,19 +114,25 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           soon: true,
         ),
         const SizedBox(height: 10),
-        const _Pick(
-          sprite: Sprites.car,
-          gradient: [Color(0xFF1C3A4A), Color(0xFF0F1D26)],
-          name: 'Garaż',
-          text: 'Stare auto, które odnawiasz część po części.',
-          soon: true,
+        _Pick(
+          selected: _pick == 'minimal',
+          onTap: () => setState(() => _pick = 'minimal'),
+          sprite: Sprites.flag,
+          gradient: const [Color(0xFF26303F), Color(0xFF151B26)],
+          name: 'Bez towarzysza',
+          text: 'Tryb minimalny: same bloki i odliczanie. Zmienisz w ustawieniach.',
         ),
         const Spacer(),
         AppButton(
-          'Wybieram Tiko',
+          switch (_pick) {
+            'car' => 'Wybieram Kaszlaka',
+            'minimal' => 'Zaczynamy',
+            _ => 'Wybieram Tiko',
+          },
           onPressed: () => context.read<AppState>().completeOnboarding(
             name: _name.text,
-            companionId: 'tiko',
+            companionId: _pick == 'minimal' ? 'tiko' : _pick,
+            minimal: _pick == 'minimal',
           ),
         ),
         TextButton(
@@ -132,7 +152,10 @@ class _Pick extends StatelessWidget {
     required this.text,
     this.selected = false,
     this.soon = false,
+    this.onTap,
   });
+
+  final VoidCallback? onTap;
 
   final Sprite sprite;
   final List<Color> gradient;
@@ -146,6 +169,7 @@ class _Pick extends StatelessWidget {
     return Opacity(
       opacity: soon ? 0.55 : 1,
       child: AppCard(
+        onTap: soon ? null : onTap,
         borderColor: selected ? Palette.gold : Palette.line,
         padding: const EdgeInsets.all(10),
         child: Row(
